@@ -26,6 +26,7 @@ export class SpeechService {
   }
 
   async startListening(): Promise<string> {
+    console.log('=== startListening が呼び出されました ===');
     return new Promise((resolve, reject) => {
       if (!this.recognition) {
         console.error('音声認識が利用できません');
@@ -34,46 +35,65 @@ export class SpeechService {
       }
 
       console.log('音声認識を開始します...');
-      this.isListening = true;
+      console.log('マイクの許可状況を確認中...');
       
-      // 既存のイベントハンドラーをクリア
-      this.recognition.onresult = null;
-      this.recognition.onerror = null;
-      this.recognition.onend = null;
-      this.recognition.onstart = null;
-
-      this.recognition.onstart = () => {
-        console.log('音声認識が開始されました');
-      };
-
-      this.recognition.onresult = (event) => {
-        console.log('音声認識結果を受信:', event);
-        const transcript = event.results[0][0].transcript;
-        console.log('認識されたテキスト:', transcript);
-        console.log('信頼度:', event.results[0][0].confidence);
-        this.isListening = false;
-        resolve(transcript);
-      };
-
-      this.recognition.onerror = (event) => {
-        console.error('音声認識エラー:', event.error, event.message);
-        this.isListening = false;
-        reject(new Error(`音声認識エラー: ${event.error}`));
-      };
-
-      this.recognition.onend = () => {
-        console.log('音声認識が終了しました');
-        this.isListening = false;
-      };
-
-      try {
-        this.recognition.start();
-      } catch (error) {
-        console.error('音声認識の開始に失敗:', error);
-        this.isListening = false;
-        reject(error);
-      }
+      // ブラウザのマイク許可を確認
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          console.log('マイクのアクセス許可が取得できました');
+          this.startRecognition(resolve, reject);
+        })
+        .catch((error) => {
+          console.error('マイクのアクセス許可が取得できませんでした:', error);
+          reject(new Error('マイクのアクセス許可が必要です'));
+        });
     });
+  }
+
+  private startRecognition(resolve: (value: string) => void, reject: (reason?: any) => void) {
+    if (!this.recognition) return;
+
+    this.isListening = true;
+    
+    // 既存のイベントハンドラーをクリア
+    this.recognition.onresult = null;
+    this.recognition.onerror = null;
+    this.recognition.onend = null;
+    this.recognition.onstart = null;
+
+    this.recognition.onstart = () => {
+      console.log('✅ 音声認識が正常に開始されました');
+    };
+
+    this.recognition.onresult = (event) => {
+      console.log('🎤 音声認識結果を受信:', event);
+      const transcript = event.results[0][0].transcript;
+      console.log('📝 認識されたテキスト:', transcript);
+      console.log('🎯 信頼度:', event.results[0][0].confidence);
+      this.isListening = false;
+      resolve(transcript);
+    };
+
+    this.recognition.onerror = (event) => {
+      console.error('❌ 音声認識エラー:', event.error, event.message);
+      this.isListening = false;
+      reject(new Error(`音声認識エラー: ${event.error}`));
+    };
+
+    this.recognition.onend = () => {
+      console.log('🔚 音声認識が終了しました');
+      this.isListening = false;
+    };
+
+    try {
+      console.log('🚀 recognition.start() を実行します...');
+      this.recognition.start();
+      console.log('✨ recognition.start() が正常に実行されました');
+    } catch (error) {
+      console.error('💥 音声認識の開始に失敗:', error);
+      this.isListening = false;
+      reject(error);
+    }
   }
 
   async speak(text: string): Promise<void> {
