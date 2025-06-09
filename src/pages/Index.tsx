@@ -19,7 +19,18 @@ const Index = () => {
   const [currentMessage, setCurrentMessage] = useState('');
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
   const speechServiceRef = useRef<SpeechService | null>(null);
+  
+  // 最新の isCallActive 状態を useRef で管理（クロージャ問題を解決）
+  const isCallActiveRef = useRef(false);
+  
   const { toast } = useToast();
+
+  // isCallActive を安全に更新する関数
+  const updateCallActiveState = (active: boolean) => {
+    console.log(`📱 通話状態を更新: ${active}`);
+    setIsCallActive(active);
+    isCallActiveRef.current = active;
+  };
 
   useEffect(() => {
     const savedKey = storageService.getOpenAIKey();
@@ -61,8 +72,14 @@ const Index = () => {
       return;
     }
 
+    // セッション開始フラグをローカル変数で管理
+    let sessionActive = true;
+
     try {
-      setIsCallActive(true);
+      console.log('✅ isCallActiveをtrueに設定します');
+      updateCallActiveState(true);
+      console.log('isCallActive (状態):', isCallActive);
+      console.log('isCallActiveRef (最新値):', isCallActiveRef.current);
       setCallStartTime(new Date());
       speechServiceRef.current?.resetConversation();
       
@@ -72,32 +89,55 @@ const Index = () => {
       setIsSpeaking(false);
 
       // 最初の指示を取得
+      console.log('OpenAI APIを呼び出します...');
       const response = await speechServiceRef.current?.sendToOpenAI(
         "おはようございます。朝の準備を始めます。最初の指示をお願いします。",
         activeInstructions
       );
+      console.log('OpenAI APIからの応答:', response);
 
       if (response) {
         setCurrentMessage(response);
         setIsSpeaking(true);
-        await speechServiceRef.current?.speak(response);
+        console.log('AIが話し始めます...');
+        try {
+          await speechServiceRef.current?.speak(response);
+          console.log('AIが話し終わりました');
+        } catch (speakError) {
+          console.error('🔊 音声合成エラー:', speakError);
+          throw speakError; // エラーを再スローしてcatchブロックに伝播
+        }
         setIsSpeaking(false);
       }
 
-      startListening();
-    } catch (error) {
-      console.error('通話開始エラー:', error);
-      toast({
-        title: "エラー",
-        description: "通話の開始に失敗しました。",
-        variant: "destructive"
-      });
-      setIsCallActive(false);
-    }
+      console.log('startListeningを呼び出します...');
+      // セッションがアクティブな場合のみ音声認識を開始
+      if (sessionActive) {
+        console.log('📞 セッションがアクティブです - 音声認識を開始します');
+        // 状態更新を待つために少し遅らせる
+        setTimeout(() => {
+          startListening();
+        }, 100);
+      } else {
+        console.log('❌ セッションが非アクティブ - 音声認識をスキップします');
+      }
+          } catch (error) {
+        console.error('❌❌❌ 通話開始エラーが発生しました:', error);
+        console.error('❌ エラーの詳細:', error.message, error.stack);
+        console.log('❌ セッションを終了します');
+        sessionActive = false;
+        updateCallActiveState(false);
+        toast({
+          title: "エラー",
+          description: "通話の開始に失敗しました。",
+          variant: "destructive"
+        });
+      }
   };
 
   const endCall = () => {
-    setIsCallActive(false);
+    console.log('🛑 endCall: isCallActiveをfalseに設定します');
+    updateCallActiveState(false);
     setIsListening(false);
     setIsSpeaking(false);
     setCurrentMessage('');
@@ -122,9 +162,29 @@ const Index = () => {
   };
 
   const startListening = async () => {
-    if (!speechServiceRef.current || !isCallActive) return;
+    console.log('=== Index.tsx startListening が呼び出されました ===');
+    console.log('speechServiceRef.current:', speechServiceRef.current);
+    console.log('isCallActive (状態):', isCallActive);
+    console.log('isCallActiveRef (最新値):', isCallActiveRef.current);
+    
+    if (!speechServiceRef.current) {
+      console.log('startListeningを終了します（speechServiceRef.currentがnull）');
+      return;
+    }
+    
+    if (!isCallActiveRef.current) {
+      console.log('startListeningを終了します（isCallActiveRefがfalse）');
+      return;
+    }
+    
+    // isCallActive の状態を再確認
+    if (!isCallActiveRef.current) {
+      console.log('⚠️ isCallActive が false です。状態を再確認中...');
+      return;
+    }
 
     try {
+      console.log('音声認識を開始しようとしています...');
       setIsListening(true);
       const userInput = await speechServiceRef.current.startListening();
       setIsListening(false);
@@ -133,39 +193,64 @@ const Index = () => {
       setCurrentMessage(`あなた: ${userInput}`);
 
       // AIからの応答を取得
+      console.log('🤖 OpenAI APIからの応答を待機中...');
       const response = await speechServiceRef.current.sendToOpenAI(
         userInput,
         instructions.filter(inst => inst.isActive)
       );
+      console.log('🤖 OpenAI APIからの応答:', response);
 
       if (response) {
+        console.log('🎬 AIの応答があります - 音声合成を開始します');
         setCurrentMessage(response);
         setIsSpeaking(true);
+        console.log('🔊 AIが話し始めます...');
         await speechServiceRef.current.speak(response);
+        console.log('🔊 AIが話し終わりました');
         setIsSpeaking(false);
         
         // 次の音声入力を待機
+        console.log('⏰ 1秒後に次の音声認識を開始します');
         setTimeout(() => {
-          if (isCallActive) {
+          console.log('⏰ タイムアウト後 - isCallActive (状態):', isCallActive);
+          console.log('⏰ タイムアウト後 - isCallActiveRef (最新値):', isCallActiveRef.current);
+          if (isCallActiveRef.current) {
+            console.log('🔄 次の音声認識を開始します');
             startListening();
+          } else {
+            console.log('❌ isCallActiveがfalseのため、音声認識を開始しません');
           }
         }, 1000);
+      } else {
+        console.log('❌ AIからの応答がありません');
       }
     } catch (error) {
-      console.error('音声認識エラー:', error);
+      console.error('🔊 音声認識エラーが発生しました:', error);
       setIsListening(false);
-      toast({
-        title: "音声認識エラー",
-        description: "音声の認識に失敗しました。もう一度お試しください。",
-        variant: "destructive"
-      });
       
-      // エラー後も通話を継続
-      if (isCallActive) {
-        setTimeout(() => {
-          startListening();
-        }, 2000);
+      // ネットワークエラーの場合の特別な処理
+      if (error.message && error.message.includes('network')) {
+        console.log('🌐 ネットワークエラーです - 再試行します');
+        toast({
+          title: "ネットワークエラー",
+          description: "音声認識サービスへの接続に失敗しました。再試行中...",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "音声認識エラー",
+          description: "音声の認識に失敗しました。もう一度お試しください。",
+          variant: "destructive"
+        });
       }
+      
+      // エラー後も通話を継続（endCallは呼ばない）
+      console.log('🔄 音声認識を再試行します...');
+      
+      setTimeout(() => {
+        console.log('🔄 startListeningを再呼び出しします');
+        startListening();
+      }, 3000); // ネットワークエラーの場合は少し長めに待つ
     }
   };
 
