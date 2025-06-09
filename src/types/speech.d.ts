@@ -4,14 +4,6 @@ declare global {
     SpeechRecognition: typeof SpeechRecognition;
     webkitSpeechRecognition: typeof SpeechRecognition;
   }
-
-  var SpeechRecognition: {
-    new (): SpeechRecognition;
-  };
-
-  var webkitSpeechRecognition: {
-    new (): SpeechRecognition;
-  };
 }
 
 interface SpeechRecognition extends EventTarget {
@@ -51,5 +43,13 @@ interface SpeechRecognitionErrorEvent {
   error: string;
   message: string;
 }
+
+declare var SpeechRecognition: {
+  new (): SpeechRecognition;
+};
+
+declare var webkitSpeechRecognition: {
+  new (): SpeechRecognition;
+};
 
 export {};

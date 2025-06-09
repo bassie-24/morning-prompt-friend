@@ -12,41 +12,67 @@ export class SpeechService {
   }
 
   private initializeSpeechRecognition() {
+    console.log('音声認識を初期化中...');
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       this.recognition = new SpeechRecognition();
       this.recognition.continuous = false;
       this.recognition.interimResults = false;
       this.recognition.lang = 'ja-JP';
+      console.log('音声認識が初期化されました');
+    } else {
+      console.error('音声認識がサポートされていません');
     }
   }
 
   async startListening(): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!this.recognition) {
+        console.error('音声認識が利用できません');
         reject(new Error('音声認識がサポートされていません'));
         return;
       }
 
+      console.log('音声認識を開始します...');
       this.isListening = true;
-      this.recognition.start();
+      
+      // 既存のイベントハンドラーをクリア
+      this.recognition.onresult = null;
+      this.recognition.onerror = null;
+      this.recognition.onend = null;
+      this.recognition.onstart = null;
+
+      this.recognition.onstart = () => {
+        console.log('音声認識が開始されました');
+      };
 
       this.recognition.onresult = (event) => {
+        console.log('音声認識結果を受信:', event);
         const transcript = event.results[0][0].transcript;
-        this.isListening = false;
         console.log('認識されたテキスト:', transcript);
+        console.log('信頼度:', event.results[0][0].confidence);
+        this.isListening = false;
         resolve(transcript);
       };
 
       this.recognition.onerror = (event) => {
+        console.error('音声認識エラー:', event.error, event.message);
         this.isListening = false;
-        console.error('音声認識エラー:', event.error);
         reject(new Error(`音声認識エラー: ${event.error}`));
       };
 
       this.recognition.onend = () => {
+        console.log('音声認識が終了しました');
         this.isListening = false;
       };
+
+      try {
+        this.recognition.start();
+      } catch (error) {
+        console.error('音声認識の開始に失敗:', error);
+        this.isListening = false;
+        reject(error);
+      }
     });
   }
 
