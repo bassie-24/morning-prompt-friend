@@ -1,8 +1,16 @@
 
 import { storageService, UserInstruction } from './storage';
 
+// Web Speech API の型宣言
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 export class SpeechService {
-  private recognition: SpeechRecognition | null = null;
+  private recognition: any = null;
   private synthesis: SpeechSynthesis;
   private isListening = false;
   private currentConversation: Array<{ role: 'user' | 'assistant'; content: string; timestamp: string }> = [];
