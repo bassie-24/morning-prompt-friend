@@ -1,3 +1,4 @@
+
 import { storageService, UserInstruction } from './storage';
 
 export class SpeechService {
@@ -13,7 +14,7 @@ export class SpeechService {
 
   private initializeSpeechRecognition() {
     console.log('音声認識を初期化中...');
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       this.recognition = new SpeechRecognition();
       this.recognition.continuous = false;
