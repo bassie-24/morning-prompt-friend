@@ -1,9 +1,17 @@
 
 declare global {
   interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
   }
+
+  var SpeechRecognition: {
+    new (): SpeechRecognition;
+  };
+
+  var webkitSpeechRecognition: {
+    new (): SpeechRecognition;
+  };
 }
 
 interface SpeechRecognition extends EventTarget {

@@ -1,5 +1,3 @@
-
-import '../types/speech.d.ts';
 import { storageService, UserInstruction } from './storage';
 
 export class SpeechService {
