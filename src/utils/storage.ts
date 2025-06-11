@@ -19,10 +19,53 @@ export interface CallLog {
   }>;
 }
 
+export type PlanType = 'free' | 'plus' | 'premium';
+
+export interface UserPlan {
+  type: PlanType;
+  name: string;
+  nameJa: string;
+  timeLimit: number; // seconds
+  canViewLogs: boolean;
+  canUseAdvancedAI: boolean;
+  description: string;
+}
+
+export const PLAN_CONFIGS: Record<PlanType, UserPlan> = {
+  free: {
+    type: 'free',
+    name: 'Free',
+    nameJa: '無料',
+    timeLimit: 60, // 1 minute
+    canViewLogs: false,
+    canUseAdvancedAI: false,
+    description: '基本的な朝のアシスタント機能（1分間の会話制限）'
+  },
+  plus: {
+    type: 'plus',
+    name: 'Plus',
+    nameJa: 'プラス',
+    timeLimit: 180, // 3 minutes
+    canViewLogs: true,
+    canUseAdvancedAI: false,
+    description: '通話ログ閲覧可能（3分間の会話制限）'
+  },
+  premium: {
+    type: 'premium',
+    name: 'Premium',
+    nameJa: 'プレミアム',
+    timeLimit: 300, // 5 minutes
+    canViewLogs: true,
+    canUseAdvancedAI: true,
+    description: 'フル機能（5分間の会話制限、リアルタイム情報検索対応）'
+  }
+};
+
 const STORAGE_KEYS = {
   INSTRUCTIONS: 'morning_assistant_instructions',
   CALL_LOGS: 'morning_assistant_call_logs',
-  OPENAI_API_KEY: 'morning_assistant_openai_key'
+  OPENAI_API_KEY: 'morning_assistant_openai_key',
+  USER_PLAN: 'morning_assistant_user_plan'
 };
 
 export const storageService = {
@@ -84,5 +127,21 @@ export const storageService = {
 
   saveOpenAIKey(key: string): void {
     localStorage.setItem(STORAGE_KEYS.OPENAI_API_KEY, key);
+  },
+
+  // Plan management
+  getCurrentPlan(): UserPlan {
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_PLAN);
+    const planType: PlanType = stored ? JSON.parse(stored) : 'free';
+    return PLAN_CONFIGS[planType];
+  },
+
+  setPlan(planType: PlanType): void {
+    localStorage.setItem(STORAGE_KEYS.USER_PLAN, JSON.stringify(planType));
+  },
+
+  getPlanType(): PlanType {
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_PLAN);
+    return stored ? JSON.parse(stored) : 'free';
   }
 };

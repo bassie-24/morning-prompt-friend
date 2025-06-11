@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { storageService, UserInstruction } from '@/utils/storage';
+import { storageService, UserInstruction, PlanType, PLAN_CONFIGS } from '@/utils/storage';
 import { ArrowLeft, Plus, Trash2, GripVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -15,6 +15,7 @@ const Settings = () => {
   const [instructions, setInstructions] = useState<UserInstruction[]>([]);
   const [newInstruction, setNewInstruction] = useState({ title: '', content: '' });
   const [apiKey, setApiKey] = useState('');
+  const [currentPlan, setCurrentPlan] = useState<PlanType>('free');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -23,6 +24,9 @@ const Settings = () => {
     
     const savedKey = storageService.getOpenAIKey();
     if (savedKey) setApiKey(savedKey);
+    
+    const savedPlan = storageService.getPlanType();
+    setCurrentPlan(savedPlan);
   }, []);
 
   const addInstruction = () => {
@@ -100,6 +104,15 @@ const Settings = () => {
     }
   };
 
+  const changePlan = (planType: PlanType) => {
+    storageService.setPlan(planType);
+    setCurrentPlan(planType);
+    toast({
+      title: "プランを変更しました",
+      description: `${PLAN_CONFIGS[planType].nameJa}プランに変更されました。`
+    });
+  };
+
   const sortedInstructions = [...instructions].sort((a, b) => a.order - b.order);
 
   return (
@@ -142,6 +155,63 @@ const Settings = () => {
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 OpenAIのAPIキーはローカルストレージに保存されます
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Plan Selection */}
+        <Card className="fade-in">
+          <CardHeader>
+            <CardTitle>プラン設定</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>現在のプラン</Label>
+              <div className="mt-2 space-y-3">
+                {Object.entries(PLAN_CONFIGS).map(([planType, config]) => (
+                  <Card 
+                    key={planType}
+                    className={`cursor-pointer transition-all ${
+                      currentPlan === planType 
+                        ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
+                        : 'hover:border-primary/30'
+                    }`}
+                    onClick={() => changePlan(planType as PlanType)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-lg">{config.nameJa}プラン</h3>
+                            {currentPlan === planType && (
+                              <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                                現在のプラン
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {config.description}
+                          </p>
+                          <div className="flex flex-wrap gap-3 text-xs">
+                            <span className="flex items-center gap-1">
+                              ⏱️ {Math.floor(config.timeLimit / 60)}分間
+                            </span>
+                            <span className="flex items-center gap-1">
+                              📝 {config.canViewLogs ? 'ログ閲覧可能' : 'ログ閲覧不可'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              🤖 {config.canUseAdvancedAI ? 'リアルタイム情報対応' : '基本AI'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                ※ 現在は検証のため無料でプランを選択できます
               </p>
             </div>
           </CardContent>
