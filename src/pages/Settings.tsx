@@ -6,15 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { storageService, UserInstruction } from '@/utils/storage';
-import { ArrowLeft, Plus, Trash2, GripVertical } from 'lucide-react';
+import { storageService, UserInstruction, PLANS, PlanType } from '@/utils/storage';
+import { ArrowLeft, Plus, Trash2, GripVertical, Check, Crown, Zap, Clock, FileText, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Settings = () => {
   const [instructions, setInstructions] = useState<UserInstruction[]>([]);
   const [newInstruction, setNewInstruction] = useState({ title: '', content: '' });
   const [apiKey, setApiKey] = useState('');
+  const [currentPlan, setCurrentPlan] = useState<PlanType>(storageService.getUserPlan());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -23,6 +25,9 @@ const Settings = () => {
     
     const savedKey = storageService.getOpenAIKey();
     if (savedKey) setApiKey(savedKey);
+
+    const savedPlan = storageService.getUserPlan();
+    setCurrentPlan(savedPlan);
   }, []);
 
   const addInstruction = () => {
@@ -100,6 +105,15 @@ const Settings = () => {
     }
   };
 
+  const changePlan = (newPlan: PlanType) => {
+    storageService.setUserPlan(newPlan);
+    setCurrentPlan(newPlan);
+    toast({
+      title: "プランを変更しました",
+      description: `${PLANS[newPlan].name}に変更されました。`
+    });
+  };
+
   const sortedInstructions = [...instructions].sort((a, b) => a.order - b.order);
 
   return (
@@ -142,6 +156,79 @@ const Settings = () => {
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 OpenAIのAPIキーはローカルストレージに保存されます
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Plan Selection */}
+        <Card className="fade-in">
+          <CardHeader>
+            <CardTitle>プラン設定</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Object.entries(PLANS).map(([planType, plan]) => (
+                <Card
+                  key={planType}
+                  className={`cursor-pointer transition-all hover:shadow-md ${
+                    currentPlan === planType 
+                      ? 'ring-2 ring-primary border-primary' 
+                      : 'hover:border-primary/50'
+                  }`}
+                  onClick={() => changePlan(planType as PlanType)}
+                >
+                  <CardContent className="p-6">
+                    <div className="text-center space-y-4">
+                      <div className="flex items-center justify-center">
+                        {planType === 'premium' && <Crown className="w-6 h-6 text-yellow-500 mr-2" />}
+                        {planType === 'plus' && <Zap className="w-6 h-6 text-blue-500 mr-2" />}
+                        <h3 className="text-lg font-semibold">{plan.name}</h3>
+                        {currentPlan === planType && (
+                          <Check className="w-5 h-5 text-primary ml-2" />
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground">
+                        {plan.description}
+                      </p>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          <span>制限時間: {Math.floor(plan.timeLimit / 60)}分</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-center gap-2">
+                          <FileText className="w-4 h-4" />
+                          <span className={plan.canViewLogs ? 'text-green-600' : 'text-muted-foreground'}>
+                            ログ閲覧: {plan.canViewLogs ? '可能' : '不可'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-center gap-2">
+                          <Search className="w-4 h-4" />
+                          <span className={plan.canUseSearchMode ? 'text-green-600' : 'text-muted-foreground'}>
+                            検索機能: {plan.canUseSearchMode ? '可能' : '不可'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {currentPlan === planType && (
+                        <Badge variant="default" className="mt-2">
+                          現在のプラン
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground text-center">
+                現在は検証用のため、すべてのプランを自由に選択できます。
+                将来的には課金システムが導入される予定です。
               </p>
             </div>
           </CardContent>
