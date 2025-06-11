@@ -1,5 +1,5 @@
 
-import { storageService, UserInstruction } from './storage';
+import { storageService, UserInstruction, PlanType, PLAN_CONFIGS } from './storage';
 
 // Web Speech API の型宣言
 declare global {
@@ -126,7 +126,8 @@ export class SpeechService {
       throw new Error('OpenAI APIキーが設定されていません');
     }
 
-    const systemPrompt = this.buildSystemPrompt(instructions);
+    const currentPlan = storageService.getPlanType();
+    const systemPrompt = this.buildSystemPrompt(instructions, currentPlan);
     
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -137,18 +138,26 @@ export class SpeechService {
     console.log('OpenAI APIに送信するメッセージ:', messages);
 
     try {
+      const requestBody: any = {
+        model: 'gpt-4',
+        messages,
+        max_tokens: 500,
+        temperature: 0.7
+      };
+
+      // Premium プランの場合は検索機能を有効化（実際の実装では外部API連携が必要）
+      if (PLAN_CONFIGS[currentPlan].canUseAdvancedAI) {
+        requestBody.temperature = 0.8; // より創造的な応答
+        // 注意: 実際のリアルタイム情報検索は別途APIが必要です
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages,
-          max_tokens: 500,
-          temperature: 0.7
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -171,14 +180,14 @@ export class SpeechService {
     }
   }
 
-  private buildSystemPrompt(instructions: UserInstruction[]): string {
+  private buildSystemPrompt(instructions: UserInstruction[], planType: PlanType): string {
     const activeInstructions = instructions
       .filter(inst => inst.isActive)
       .sort((a, b) => a.order - b.order)
       .map(inst => `${inst.title}: ${inst.content}`)
       .join('\n');
 
-    return `あなたは朝の目覚めをサポートするAIアシスタントです。
+    const basePrompt = `あなたは朝の目覚めをサポートするAIアシスタントです。
 
 ユーザーの朝の行動をサポートするため、以下の指示内容を順番に実行してください：
 
@@ -190,7 +199,20 @@ ${activeInstructions}
 3. ユーザーが指示を完了したら、次の指示に進んでください
 4. 励ましの言葉を適度に入れて、ユーザーのモチベーションを維持してください
 5. 回答は簡潔に、1-2文程度にしてください
-6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください
+6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください`;
+
+    if (PLAN_CONFIGS[planType].canUseAdvancedAI) {
+      return basePrompt + `
+
+プレミアムプラン特別機能：
+- ユーザーが天気や今日のニュースについて質問した場合、最新の情報を提供するよう努めてください
+- より詳細で個人に合わせたアドバイスを提供してください
+- 必要に応じて、朝の準備に関連する追加の提案を行ってください
+
+最初の指示から始めてください。`;
+    }
+
+    return basePrompt + `
 
 最初の指示から始めてください。`;
   }

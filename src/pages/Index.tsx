@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { storageService, UserInstruction } from '@/utils/storage';
+import { storageService, UserInstruction, PlanType, PLAN_CONFIGS } from '@/utils/storage';
 import { SpeechService } from '@/utils/speechService';
 import { Mic, MicOff, Phone, PhoneOff, Settings, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -18,7 +18,10 @@ const Index = () => {
   const [instructions, setInstructions] = useState<UserInstruction[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
+  const [remainingTime, setRemainingTime] = useState(0);
+  const [currentPlan, setCurrentPlan] = useState<PlanType>('free');
   const speechServiceRef = useRef<SpeechService | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   // 最新の isCallActive 状態を useRef で管理（クロージャ問題を解決）
   const isCallActiveRef = useRef(false);
@@ -39,7 +42,16 @@ const Index = () => {
     const savedInstructions = storageService.getInstructions();
     setInstructions(savedInstructions);
     
+    const savedPlan = storageService.getPlanType();
+    setCurrentPlan(savedPlan);
+    
     speechServiceRef.current = new SpeechService();
+    
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, []);
 
   const saveApiKey = () => {
@@ -50,6 +62,40 @@ const Index = () => {
         description: "OpenAI APIキーが正常に保存されました。"
       });
     }
+  };
+
+  const startTimer = () => {
+    const plan = PLAN_CONFIGS[currentPlan];
+    setRemainingTime(plan.timeLimit);
+    
+    timerRef.current = setInterval(() => {
+      setRemainingTime((prev) => {
+        if (prev <= 1) {
+          endCall();
+          toast({
+            title: "通話時間が終了しました",
+            description: `${plan.nameJa}プランの制限時間（${Math.floor(plan.timeLimit / 60)}分）に達しました。`,
+            variant: "destructive"
+          });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setRemainingTime(0);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const startCall = async () => {
@@ -81,6 +127,7 @@ const Index = () => {
       console.log('isCallActive (状態):', isCallActive);
       console.log('isCallActiveRef (最新値):', isCallActiveRef.current);
       setCallStartTime(new Date());
+      startTimer();
       speechServiceRef.current?.resetConversation();
       
       setCurrentMessage("おはようございます！朝の準備を始めましょう。");
@@ -138,6 +185,7 @@ const Index = () => {
   const endCall = () => {
     console.log('🛑 endCall: isCallActiveをfalseに設定します');
     updateCallActiveState(false);
+    stopTimer();
     setIsListening(false);
     setIsSpeaking(false);
     setCurrentMessage('');
@@ -315,14 +363,18 @@ const Index = () => {
                 {!isCallActive ? (
                   <div>
                     <h2 className="text-2xl font-semibold mb-2">通話を開始する準備ができました</h2>
-                    <p className="text-muted-foreground">
-                      アクティブな指示: {instructions.filter(inst => inst.isActive).length}件
-                    </p>
+                    <div className="space-y-1 text-muted-foreground">
+                      <p>現在のプラン: {PLAN_CONFIGS[currentPlan].nameJa} ({Math.floor(PLAN_CONFIGS[currentPlan].timeLimit / 60)}分制限)</p>
+                      <p>アクティブな指示: {instructions.filter(inst => inst.isActive).length}件</p>
+                    </div>
                   </div>
                 ) : (
                   <div>
                     <h2 className="text-2xl font-semibold mb-2">通話中</h2>
                     <div className="space-y-2">
+                      <div className="text-lg font-mono text-primary">
+                        残り時間: {formatTime(remainingTime)}
+                      </div>
                       {isSpeaking && (
                         <p className="text-primary font-medium">🎤 AIが話しています...</p>
                       )}
