@@ -1,5 +1,5 @@
 
-import { storageService, UserInstruction } from './storage';
+import { storageService, UserInstruction, PLAN_LIMITS } from './storage';
 
 // Web Speech API の型宣言
 declare global {
@@ -126,7 +126,9 @@ export class SpeechService {
       throw new Error('OpenAI APIキーが設定されていません');
     }
 
-    const systemPrompt = this.buildSystemPrompt(instructions);
+    const currentPlan = storageService.getUserPlan();
+    const planLimits = PLAN_LIMITS[currentPlan.type];
+    const systemPrompt = this.buildSystemPrompt(instructions, planLimits.hasExternalData);
     
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -171,12 +173,19 @@ export class SpeechService {
     }
   }
 
-  private buildSystemPrompt(instructions: UserInstruction[]): string {
+  private buildSystemPrompt(instructions: UserInstruction[], hasExternalData: boolean = false): string {
     const activeInstructions = instructions
       .filter(inst => inst.isActive)
       .sort((a, b) => a.order - b.order)
       .map(inst => `${inst.title}: ${inst.content}`)
       .join('\n');
+
+    const externalDataInfo = hasExternalData ? `
+
+プレミアムプラン限定機能：
+- 必要に応じて、最新のニュース、天気予報、日付/時刻情報を含めることができます
+- 朝のスケジュールに関連する情報があれば積極的に提供してください
+- ただし、実際の外部データにはアクセスできないため、一般的な情報や推測で回答してください` : '';
 
     return `あなたは朝の目覚めをサポートするAIアシスタントです。
 
@@ -190,7 +199,7 @@ ${activeInstructions}
 3. ユーザーが指示を完了したら、次の指示に進んでください
 4. 励ましの言葉を適度に入れて、ユーザーのモチベーションを維持してください
 5. 回答は簡潔に、1-2文程度にしてください
-6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください
+6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください${externalDataInfo}
 
 最初の指示から始めてください。`;
   }
