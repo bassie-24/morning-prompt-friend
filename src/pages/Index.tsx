@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,9 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { storageService, UserInstruction } from '@/utils/storage';
-import { planService } from '@/utils/planService';
 import { SpeechService } from '@/utils/speechService';
-import { Mic, MicOff, Phone, PhoneOff, Settings, FileText, Clock } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Settings, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
@@ -18,16 +18,12 @@ const Index = () => {
   const [instructions, setInstructions] = useState<UserInstruction[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
-  const [remainingTime, setRemainingTime] = useState<number>(0);
   const speechServiceRef = useRef<SpeechService | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   // 最新の isCallActive 状態を useRef で管理（クロージャ問題を解決）
   const isCallActiveRef = useRef(false);
   
   const { toast } = useToast();
-  const currentPlan = planService.getCurrentPlan();
-  const planFeatures = planService.getPlanFeatures();
 
   // isCallActive を安全に更新する関数
   const updateCallActiveState = (active: boolean) => {
@@ -45,47 +41,6 @@ const Index = () => {
     
     speechServiceRef.current = new SpeechService();
   }, []);
-
-  // タイマー管理
-  useEffect(() => {
-    if (isCallActive && callStartTime) {
-      const maxDuration = planFeatures.maxCallDuration * 60; // 秒に変換
-      setRemainingTime(maxDuration);
-      
-      timerRef.current = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - callStartTime.getTime()) / 1000);
-        const remaining = maxDuration - elapsed;
-        
-        setRemainingTime(remaining);
-        
-        if (remaining <= 0) {
-          endCall();
-          toast({
-            title: "通話時間終了",
-            description: `${planFeatures.displayName}プランの時間制限（${planFeatures.maxCallDuration}分）に達しました。`,
-            variant: "destructive"
-          });
-        }
-      }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [isCallActive, callStartTime, planFeatures]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const saveApiKey = () => {
     if (apiKey.trim()) {
@@ -137,8 +92,7 @@ const Index = () => {
       console.log('OpenAI APIを呼び出します...');
       const response = await speechServiceRef.current?.sendToOpenAI(
         "おはようございます。朝の準備を始めます。最初の指示をお願いします。",
-        activeInstructions,
-        planFeatures.canUseRealtimeAI
+        activeInstructions
       );
       console.log('OpenAI APIからの応答:', response);
 
@@ -151,32 +105,34 @@ const Index = () => {
           console.log('AIが話し終わりました');
         } catch (speakError) {
           console.error('🔊 音声合成エラー:', speakError);
-          throw speakError;
+          throw speakError; // エラーを再スローしてcatchブロックに伝播
         }
         setIsSpeaking(false);
       }
 
       console.log('startListeningを呼び出します...');
+      // セッションがアクティブな場合のみ音声認識を開始
       if (sessionActive) {
         console.log('📞 セッションがアクティブです - 音声認識を開始します');
+        // 状態更新を待つために少し遅らせる
         setTimeout(() => {
           startListening();
         }, 100);
       } else {
         console.log('❌ セッションが非アクティブ - 音声認識をスキップします');
       }
-    } catch (error) {
-      console.error('❌❌❌ 通話開始エラーが発生しました:', error);
-      console.error('❌ エラーの詳細:', error.message, error.stack);
-      console.log('❌ セッションを終了します');
-      sessionActive = false;
-      updateCallActiveState(false);
-      toast({
-        title: "エラー",
-        description: "通話の開始に失敗しました。",
-        variant: "destructive"
-      });
-    }
+          } catch (error) {
+        console.error('❌❌❌ 通話開始エラーが発生しました:', error);
+        console.error('❌ エラーの詳細:', error.message, error.stack);
+        console.log('❌ セッションを終了します');
+        sessionActive = false;
+        updateCallActiveState(false);
+        toast({
+          title: "エラー",
+          description: "通話の開始に失敗しました。",
+          variant: "destructive"
+        });
+      }
   };
 
   const endCall = () => {
@@ -186,8 +142,8 @@ const Index = () => {
     setIsSpeaking(false);
     setCurrentMessage('');
     
-    // 通話ログを保存（プラン制限をチェック）
-    if (callStartTime && speechServiceRef.current && planFeatures.canViewLogs) {
+    // 通話ログを保存
+    if (callStartTime && speechServiceRef.current) {
       const duration = Math.floor((Date.now() - callStartTime.getTime()) / 1000);
       const conversation = speechServiceRef.current.getConversationHistory();
       
@@ -201,11 +157,6 @@ const Index = () => {
       toast({
         title: "通話が終了しました",
         description: "通話ログが保存されました。"
-      });
-    } else if (callStartTime && !planFeatures.canViewLogs) {
-      toast({
-        title: "通話が終了しました",
-        description: "ログの保存にはプラス以上のプランが必要です。"
       });
     }
   };
@@ -226,6 +177,7 @@ const Index = () => {
       return;
     }
     
+    // isCallActive の状態を再確認
     if (!isCallActiveRef.current) {
       console.log('⚠️ isCallActive が false です。状態を再確認中...');
       return;
@@ -240,11 +192,11 @@ const Index = () => {
       console.log('ユーザー入力:', userInput);
       setCurrentMessage(`あなた: ${userInput}`);
 
+      // AIからの応答を取得
       console.log('🤖 OpenAI APIからの応答を待機中...');
       const response = await speechServiceRef.current.sendToOpenAI(
         userInput,
-        instructions.filter(inst => inst.isActive),
-        planFeatures.canUseRealtimeAI
+        instructions.filter(inst => inst.isActive)
       );
       console.log('🤖 OpenAI APIからの応答:', response);
 
@@ -257,6 +209,7 @@ const Index = () => {
         console.log('🔊 AIが話し終わりました');
         setIsSpeaking(false);
         
+        // 次の音声入力を待機
         console.log('⏰ 1秒後に次の音声認識を開始します');
         setTimeout(() => {
           console.log('⏰ タイムアウト後 - isCallActive (状態):', isCallActive);
@@ -275,6 +228,7 @@ const Index = () => {
       console.error('🔊 音声認識エラーが発生しました:', error);
       setIsListening(false);
       
+      // ネットワークエラーの場合の特別な処理
       if (error.message && error.message.includes('network')) {
         console.log('🌐 ネットワークエラーです - 再試行します');
         toast({
@@ -290,12 +244,13 @@ const Index = () => {
         });
       }
       
+      // エラー後も通話を継続（endCallは呼ばない）
       console.log('🔄 音声認識を再試行します...');
       
       setTimeout(() => {
         console.log('🔄 startListeningを再呼び出しします');
         startListening();
-      }, 3000);
+      }, 3000); // ネットワークエラーの場合は少し長めに待つ
     }
   };
 
@@ -307,9 +262,6 @@ const Index = () => {
           <div>
             <h1 className="text-3xl font-bold text-foreground">朝のAIアシスタント</h1>
             <p className="text-muted-foreground">音声で朝の準備をサポートします</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              現在のプラン: {planFeatures.displayName} (最大{planFeatures.maxCallDuration}分)
-            </p>
           </div>
           <div className="flex gap-2">
             <Link to="/settings">
@@ -318,19 +270,12 @@ const Index = () => {
                 設定
               </Button>
             </Link>
-            {planFeatures.canViewLogs ? (
-              <Link to="/logs">
-                <Button variant="outline" size="sm">
-                  <FileText className="w-4 h-4 mr-2" />
-                  ログ
-                </Button>
-              </Link>
-            ) : (
-              <Button variant="outline" size="sm" disabled>
+            <Link to="/logs">
+              <Button variant="outline" size="sm">
                 <FileText className="w-4 h-4 mr-2" />
-                ログ (プラス以上)
+                ログ
               </Button>
-            )}
+            </Link>
           </div>
         </div>
 
@@ -378,12 +323,6 @@ const Index = () => {
                   <div>
                     <h2 className="text-2xl font-semibold mb-2">通話中</h2>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        <span className="font-mono text-lg">
-                          残り時間: {formatTime(remainingTime)}
-                        </span>
-                      </div>
                       {isSpeaking && (
                         <p className="text-primary font-medium">🎤 AIが話しています...</p>
                       )}
@@ -460,10 +399,7 @@ const Index = () => {
                 <li>• 設定ページでAIに指示してほしい内容を事前に登録してください</li>
                 <li>• 通話中はAIの指示に従って行動し、完了したら口頭で報告してください</li>
                 <li>• 音声認識がうまくいかない場合は、はっきりと話してください</li>
-                <li>• {planFeatures.canViewLogs ? '通話ログは自動的に保存され、後で確認できます' : 'ログ機能はプラス以上のプランで利用できます'}</li>
-                {planFeatures.canUseRealtimeAI && (
-                  <li>• プレミアムプランではリアルタイム情報（天気、ニュース等）にアクセスできます</li>
-                )}
+                <li>• 通話ログは自動的に保存され、後で確認できます</li>
               </ul>
             </CardContent>
           </Card>
