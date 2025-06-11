@@ -19,10 +19,39 @@ export interface CallLog {
   }>;
 }
 
+export type PlanType = 'free' | 'plus' | 'premium';
+
+export interface UserPlan {
+  type: PlanType;
+  selectedAt: string;
+}
+
+export const PLAN_LIMITS = {
+  free: {
+    timeLimit: 60, // 1分（秒）
+    hasLogAccess: false,
+    hasExternalData: false,
+    model: 'gpt-4'
+  },
+  plus: {
+    timeLimit: 180, // 3分（秒）
+    hasLogAccess: true,
+    hasExternalData: false,
+    model: 'gpt-4'
+  },
+  premium: {
+    timeLimit: 300, // 5分（秒）
+    hasLogAccess: true,
+    hasExternalData: true,
+    model: 'gpt-4'
+  }
+};
+
 const STORAGE_KEYS = {
   INSTRUCTIONS: 'morning_assistant_instructions',
   CALL_LOGS: 'morning_assistant_call_logs',
-  OPENAI_API_KEY: 'morning_assistant_openai_key'
+  OPENAI_API_KEY: 'morning_assistant_openai_key',
+  USER_PLAN: 'morning_assistant_user_plan'
 };
 
 export const storageService = {
@@ -84,5 +113,28 @@ export const storageService = {
 
   saveOpenAIKey(key: string): void {
     localStorage.setItem(STORAGE_KEYS.OPENAI_API_KEY, key);
+  },
+
+  // Plan management
+  getUserPlan(): UserPlan {
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_PLAN);
+    return stored ? JSON.parse(stored) : { type: 'free', selectedAt: new Date().toISOString() };
+  },
+
+  saveUserPlan(plan: UserPlan): void {
+    localStorage.setItem(STORAGE_KEYS.USER_PLAN, JSON.stringify(plan));
+  },
+
+  updateUserPlan(planType: PlanType): void {
+    const plan: UserPlan = {
+      type: planType,
+      selectedAt: new Date().toISOString()
+    };
+    this.saveUserPlan(plan);
+  },
+
+  getPlanLimits() {
+    const currentPlan = this.getUserPlan();
+    return PLAN_LIMITS[currentPlan.type];
   }
 };
