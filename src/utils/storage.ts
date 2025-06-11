@@ -1,4 +1,6 @@
 
+import { PlanType, DEFAULT_PLAN } from '@/types/plans';
+
 export interface UserInstruction {
   id: string;
   title: string;
@@ -22,7 +24,8 @@ export interface CallLog {
 const STORAGE_KEYS = {
   INSTRUCTIONS: 'morning_assistant_instructions',
   CALL_LOGS: 'morning_assistant_call_logs',
-  OPENAI_API_KEY: 'morning_assistant_openai_key'
+  OPENAI_API_KEY: 'morning_assistant_openai_key',
+  USER_PLAN: 'morning_assistant_user_plan'
 };
 
 export const storageService = {
@@ -84,5 +87,15 @@ export const storageService = {
 
   saveOpenAIKey(key: string): void {
     localStorage.setItem(STORAGE_KEYS.OPENAI_API_KEY, key);
+  },
+
+  // Plan management
+  getUserPlan(): PlanType {
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_PLAN);
+    return stored ? (stored as PlanType) : DEFAULT_PLAN;
+  },
+
+  saveUserPlan(plan: PlanType): void {
+    localStorage.setItem(STORAGE_KEYS.USER_PLAN, plan);
   }
 };

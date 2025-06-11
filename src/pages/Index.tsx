@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { storageService, UserInstruction } from '@/utils/storage';
 import { SpeechService } from '@/utils/speechService';
-import { Mic, MicOff, Phone, PhoneOff, Settings, FileText } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Settings, FileText, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PlanType, PLANS } from '@/types/plans';
 
 const Index = () => {
   const [isCallActive, setIsCallActive] = useState(false);
@@ -18,7 +19,10 @@ const Index = () => {
   const [instructions, setInstructions] = useState<UserInstruction[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
+  const [userPlan, setUserPlan] = useState<PlanType>('free');
+  const [remainingTime, setRemainingTime] = useState<number>(0);
   const speechServiceRef = useRef<SpeechService | null>(null);
+  const timeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // 最新の isCallActive 状態を useRef で管理（クロージャ問題を解決）
   const isCallActiveRef = useRef(false);
@@ -39,8 +43,47 @@ const Index = () => {
     const savedInstructions = storageService.getInstructions();
     setInstructions(savedInstructions);
     
+    const savedPlan = storageService.getUserPlan();
+    setUserPlan(savedPlan);
+    setRemainingTime(PLANS[savedPlan].timeLimit);
+    
     speechServiceRef.current = new SpeechService();
   }, []);
+
+  // Time tracking effect
+  useEffect(() => {
+    if (isCallActive && callStartTime) {
+      timeIntervalRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - callStartTime.getTime()) / 1000);
+        const remaining = PLANS[userPlan].timeLimit - elapsed;
+        
+        if (remaining <= 0) {
+          // Time limit reached
+          console.log('⏰ 時間制限に達しました');
+          setCurrentMessage('時間制限に達しました。通話を終了します。');
+          endCall();
+          toast({
+            title: "時間制限到達",
+            description: `${PLANS[userPlan].nameJa}プランの制限時間に達しました。`,
+            variant: "destructive"
+          });
+        } else {
+          setRemainingTime(remaining);
+        }
+      }, 1000);
+    } else {
+      if (timeIntervalRef.current) {
+        clearInterval(timeIntervalRef.current);
+        timeIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timeIntervalRef.current) {
+        clearInterval(timeIntervalRef.current);
+      }
+    };
+  }, [isCallActive, callStartTime, userPlan, toast]);
 
   const saveApiKey = () => {
     if (apiKey.trim()) {
@@ -80,7 +123,9 @@ const Index = () => {
       updateCallActiveState(true);
       console.log('isCallActive (状態):', isCallActive);
       console.log('isCallActiveRef (最新値):', isCallActiveRef.current);
-      setCallStartTime(new Date());
+      const startTime = new Date();
+      setCallStartTime(startTime);
+      setRemainingTime(PLANS[userPlan].timeLimit);
       speechServiceRef.current?.resetConversation();
       
       setCurrentMessage("おはようございます！朝の準備を始めましょう。");
@@ -141,6 +186,12 @@ const Index = () => {
     setIsListening(false);
     setIsSpeaking(false);
     setCurrentMessage('');
+    
+    // Clear the timer
+    if (timeIntervalRef.current) {
+      clearInterval(timeIntervalRef.current);
+      timeIntervalRef.current = null;
+    }
     
     // 通話ログを保存
     if (callStartTime && speechServiceRef.current) {
@@ -254,6 +305,12 @@ const Index = () => {
     }
   };
 
+  const formatRemainingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="min-h-screen morning-gradient p-4">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -323,6 +380,15 @@ const Index = () => {
                   <div>
                     <h2 className="text-2xl font-semibold mb-2">通話中</h2>
                     <div className="space-y-2">
+                      <div className="flex items-center justify-center gap-2 text-lg font-medium">
+                        <Clock className="w-5 h-5 text-primary" />
+                        <span className={remainingTime <= 30 ? 'text-destructive' : 'text-primary'}>
+                          {formatRemainingTime(remainingTime)}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          ({PLANS[userPlan].nameJa})
+                        </span>
+                      </div>
                       {isSpeaking && (
                         <p className="text-primary font-medium">🎤 AIが話しています...</p>
                       )}
