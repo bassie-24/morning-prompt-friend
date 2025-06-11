@@ -1,3 +1,4 @@
+
 import { storageService, UserInstruction } from './storage';
 
 // Web Speech API の型宣言
@@ -119,13 +120,13 @@ export class SpeechService {
     });
   }
 
-  async sendToOpenAI(message: string, instructions: UserInstruction[], useRealtimeAI: boolean = false): Promise<string> {
+  async sendToOpenAI(message: string, instructions: UserInstruction[]): Promise<string> {
     const apiKey = storageService.getOpenAIKey();
     if (!apiKey) {
       throw new Error('OpenAI APIキーが設定されていません');
     }
 
-    const systemPrompt = this.buildSystemPrompt(instructions, useRealtimeAI);
+    const systemPrompt = this.buildSystemPrompt(instructions);
     
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -136,8 +137,6 @@ export class SpeechService {
     console.log('OpenAI APIに送信するメッセージ:', messages);
 
     try {
-      const model = useRealtimeAI ? 'gpt-4-1106-preview' : 'gpt-4';
-      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -145,47 +144,10 @@ export class SpeechService {
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model,
+          model: 'gpt-4',
           messages,
           max_tokens: 500,
-          temperature: 0.7,
-          ...(useRealtimeAI && {
-            tools: [
-              {
-                type: 'function',
-                function: {
-                  name: 'get_current_weather',
-                  description: '現在の天気情報を取得します',
-                  parameters: {
-                    type: 'object',
-                    properties: {
-                      location: {
-                        type: 'string',
-                        description: '場所（例：東京）'
-                      }
-                    },
-                    required: ['location']
-                  }
-                }
-              },
-              {
-                type: 'function',
-                function: {
-                  name: 'get_current_news',
-                  description: '最新のニュース情報を取得します',
-                  parameters: {
-                    type: 'object',
-                    properties: {
-                      topic: {
-                        type: 'string',
-                        description: 'ニュースのトピック（例：一般、経済、スポーツ）'
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          })
+          temperature: 0.7
         })
       });
 
@@ -194,49 +156,7 @@ export class SpeechService {
       }
 
       const data = await response.json();
-      let aiResponse = data.choices[0].message.content;
-
-      // Function calling の処理
-      if (useRealtimeAI && data.choices[0].message.tool_calls) {
-        const toolCall = data.choices[0].message.tool_calls[0];
-        const functionName = toolCall.function.name;
-        const functionArgs = JSON.parse(toolCall.function.arguments);
-
-        let functionResult = '';
-        if (functionName === 'get_current_weather') {
-          functionResult = await this.getCurrentWeather(functionArgs.location);
-        } else if (functionName === 'get_current_news') {
-          functionResult = await this.getCurrentNews(functionArgs.topic);
-        }
-
-        // Function結果を含めて再度APIを呼び出し
-        const followUpMessages = [
-          ...messages,
-          data.choices[0].message,
-          {
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: functionResult
-          }
-        ];
-
-        const followUpResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model,
-            messages: followUpMessages,
-            max_tokens: 500,
-            temperature: 0.7
-          })
-        });
-
-        const followUpData = await followUpResponse.json();
-        aiResponse = followUpData.choices[0].message.content;
-      }
+      const aiResponse = data.choices[0].message.content;
 
       // 会話履歴を更新
       this.currentConversation.push(
@@ -251,37 +171,12 @@ export class SpeechService {
     }
   }
 
-  private async getCurrentWeather(location: string): Promise<string> {
-    // 簡単な天気情報のモック（実際のAPIを使用する場合はここで実装）
-    const weatherData = {
-      '東京': '晴れ、気温20度、湿度60%',
-      '大阪': '曇り、気温18度、湿度70%',
-      '名古屋': '雨、気温16度、湿度80%'
-    };
-    
-    return weatherData[location] || `${location}の天気情報: 晴れ、気温19度、湿度65%`;
-  }
-
-  private async getCurrentNews(topic?: string): Promise<string> {
-    // 簡単なニュース情報のモック（実際のAPIを使用する場合はここで実装）
-    const newsData = {
-      '一般': '今日の主要ニュース: 新しい政策が発表されました。',
-      '経済': '経済ニュース: 株価が上昇傾向にあります。',
-      'スポーツ': 'スポーツニュース: 野球の試合結果が発表されました。'
-    };
-    
-    return newsData[topic || '一般'] || '最新ニュース: 今日は穏やかな一日になりそうです。';
-  }
-
-  private buildSystemPrompt(instructions: UserInstruction[], useRealtimeAI: boolean = false): string {
+  private buildSystemPrompt(instructions: UserInstruction[]): string {
     const activeInstructions = instructions
       .filter(inst => inst.isActive)
       .sort((a, b) => a.order - b.order)
       .map(inst => `${inst.title}: ${inst.content}`)
       .join('\n');
-
-    const realtimeInfo = useRealtimeAI ? 
-      '\n\n特別機能: 必要に応じて現在の天気やニュース情報を取得できます。ユーザーが天気や最新情報について聞いた場合は、適切な関数を呼び出してください。' : '';
 
     return `あなたは朝の目覚めをサポートするAIアシスタントです。
 
@@ -295,7 +190,7 @@ ${activeInstructions}
 3. ユーザーが指示を完了したら、次の指示に進んでください
 4. 励ましの言葉を適度に入れて、ユーザーのモチベーションを維持してください
 5. 回答は簡潔に、1-2文程度にしてください
-6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください${realtimeInfo}
+6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください
 
 最初の指示から始めてください。`;
   }
