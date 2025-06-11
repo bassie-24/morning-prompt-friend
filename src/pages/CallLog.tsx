@@ -5,16 +5,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { storageService, CallLog } from '@/utils/storage';
-import { ArrowLeft, ChevronDown, ChevronRight, Clock, MessageSquare, Calendar } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, Clock, MessageSquare, Calendar, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PlanType, PLANS } from '@/types/plans';
 
 const CallLogPage = () => {
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
+  const [userPlan, setUserPlan] = useState<PlanType>('free');
 
   useEffect(() => {
     const logs = storageService.getCallLogs();
-    setCallLogs(logs);
+    const plan = storageService.getUserPlan();
+    setUserPlan(plan);
+    
+    // Only set logs if user has access
+    if (PLANS[plan].hasLogAccess) {
+      setCallLogs(logs);
+    }
   }, []);
 
   const toggleExpand = (logId: string) => {
@@ -102,7 +110,25 @@ const CallLogPage = () => {
 
         {/* Call Logs */}
         <div className="space-y-4">
-          {callLogs.length === 0 ? (
+          {!PLANS[userPlan].hasLogAccess ? (
+            <Card className="fade-in">
+              <CardContent className="p-8 text-center">
+                <Lock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">ログ閲覧制限</h3>
+                <p className="text-muted-foreground mb-4">
+                  ログ閲覧機能は{PLANS.plus.nameJa}プラン以上でご利用いただけます。
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  現在のプラン: <Badge variant="outline">{PLANS[userPlan].nameJa}</Badge>
+                </p>
+                <Link to="/settings">
+                  <Button variant="outline">
+                    プランを変更する
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : callLogs.length === 0 ? (
             <Card className="fade-in">
               <CardContent className="p-8 text-center">
                 <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />

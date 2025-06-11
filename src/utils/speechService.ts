@@ -1,5 +1,6 @@
 
 import { storageService, UserInstruction } from './storage';
+import { PlanType, PLANS } from '@/types/plans';
 
 // Web Speech API の型宣言
 declare global {
@@ -126,7 +127,8 @@ export class SpeechService {
       throw new Error('OpenAI APIキーが設定されていません');
     }
 
-    const systemPrompt = this.buildSystemPrompt(instructions);
+    const userPlan = storageService.getUserPlan();
+    const systemPrompt = this.buildSystemPrompt(instructions, userPlan);
     
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -135,20 +137,51 @@ export class SpeechService {
     ];
 
     console.log('OpenAI APIに送信するメッセージ:', messages);
+    console.log('使用プラン:', userPlan, 'サーチモード:', PLANS[userPlan].hasSearchMode);
 
     try {
+      const requestBody: any = {
+        model: this.getModelForPlan(userPlan),
+        messages,
+        max_tokens: 500,
+        temperature: 0.7
+      };
+
+      // Premium users get search capabilities (simulated with enhanced model)
+      if (PLANS[userPlan].hasSearchMode) {
+        requestBody.tools = [
+          {
+            type: "function",
+            function: {
+              name: "get_current_info",
+              description: "Get current information like news, weather, or real-time data",
+              parameters: {
+                type: "object",
+                properties: {
+                  query: {
+                    type: "string",
+                    description: "The information to search for"
+                  },
+                  type: {
+                    type: "string",
+                    enum: ["news", "weather", "general"],
+                    description: "Type of information"
+                  }
+                },
+                required: ["query", "type"]
+              }
+            }
+          }
+        ];
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages,
-          max_tokens: 500,
-          temperature: 0.7
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -171,14 +204,22 @@ export class SpeechService {
     }
   }
 
-  private buildSystemPrompt(instructions: UserInstruction[]): string {
+  private getModelForPlan(plan: PlanType): string {
+    // Premium users get access to a more advanced model
+    if (PLANS[plan].hasSearchMode) {
+      return 'gpt-4o'; // or whatever the latest model is
+    }
+    return 'gpt-4';
+  }
+
+  private buildSystemPrompt(instructions: UserInstruction[], plan: PlanType): string {
     const activeInstructions = instructions
       .filter(inst => inst.isActive)
       .sort((a, b) => a.order - b.order)
       .map(inst => `${inst.title}: ${inst.content}`)
       .join('\n');
 
-    return `あなたは朝の目覚めをサポートするAIアシスタントです。
+    const basePrompt = `あなたは朝の目覚めをサポートするAIアシスタントです。
 
 ユーザーの朝の行動をサポートするため、以下の指示内容を順番に実行してください：
 
@@ -193,6 +234,15 @@ ${activeInstructions}
 6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください
 
 最初の指示から始めてください。`;
+
+    if (PLANS[plan].hasSearchMode) {
+      return basePrompt + `
+
+【プレミアム機能】
+あなたはリアルタイム検索機能にアクセスできます。ユーザーが天気、ニュース、その他の最新情報を求めた場合は、get_current_info関数を使用して情報を取得してください。これにより、より正確で最新の情報を提供できます。`;
+    }
+
+    return basePrompt;
   }
 
   getConversationHistory() {

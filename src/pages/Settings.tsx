@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { storageService, UserInstruction } from '@/utils/storage';
 import { ArrowLeft, Plus, Trash2, GripVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import PlanSelector from '@/components/PlanSelector';
 
 const Settings = () => {
   const [instructions, setInstructions] = useState<UserInstruction[]>([]);
@@ -144,6 +145,16 @@ const Settings = () => {
                 OpenAIのAPIキーはローカルストレージに保存されます
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Plan Selection */}
+        <Card className="fade-in">
+          <CardHeader>
+            <CardTitle>プラン設定</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PlanSelector />
           </CardContent>
         </Card>
 
