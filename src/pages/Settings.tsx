@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { storageService, UserInstruction } from '@/utils/storage';
-import { ArrowLeft, Plus, Trash2, GripVertical } from 'lucide-react';
+import { storageService, UserInstruction, PlanType, PLAN_LIMITS } from '@/utils/storage';
+import { usePlan } from '@/contexts/PlanContext';
+import { ArrowLeft, Plus, Trash2, GripVertical, Crown, Zap, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Settings = () => {
@@ -16,6 +18,7 @@ const Settings = () => {
   const [newInstruction, setNewInstruction] = useState({ title: '', content: '' });
   const [apiKey, setApiKey] = useState('');
   const { toast } = useToast();
+  const { userPlan, updatePlan } = usePlan();
 
   useEffect(() => {
     const savedInstructions = storageService.getInstructions();
@@ -100,6 +103,24 @@ const Settings = () => {
     }
   };
 
+  const handlePlanChange = (planType: PlanType) => {
+    updatePlan(planType);
+    const planNames = {
+      free: '無料プラン',
+      plus: 'プラスプラン',
+      premium: 'プレミアムプラン'
+    };
+    toast({
+      title: "プランを変更しました",
+      description: `${planNames[planType]}に変更されました。`
+    });
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}分`;
+  };
+
   const sortedInstructions = [...instructions].sort((a, b) => a.order - b.order);
 
   return (
@@ -144,6 +165,112 @@ const Settings = () => {
                 OpenAIのAPIキーはローカルストレージに保存されます
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Plan Selection */}
+        <Card className="fade-in">
+          <CardHeader>
+            <CardTitle>プラン選択</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Free Plan */}
+              <Card 
+                className={`cursor-pointer transition-all ${
+                  userPlan.type === 'free' 
+                    ? 'border-primary bg-primary/5 shadow-md' 
+                    : 'border-muted hover:border-primary/50'
+                }`}
+                onClick={() => handlePlanChange('free')}
+              >
+                <CardContent className="p-4 text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Clock className="w-5 h-5 mr-2 text-muted-foreground" />
+                    <h3 className="font-semibold">無料プラン</h3>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-muted-foreground">
+                      会話時間: {formatTime(PLAN_LIMITS.free.timeLimit)}
+                    </p>
+                    <p className="text-muted-foreground">
+                      ログアクセス: なし
+                    </p>
+                    <p className="text-muted-foreground">
+                      外部データ: なし
+                    </p>
+                  </div>
+                  {userPlan.type === 'free' && (
+                    <Badge className="mt-2">現在のプラン</Badge>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Plus Plan */}
+              <Card 
+                className={`cursor-pointer transition-all ${
+                  userPlan.type === 'plus' 
+                    ? 'border-primary bg-primary/5 shadow-md' 
+                    : 'border-muted hover:border-primary/50'
+                }`}
+                onClick={() => handlePlanChange('plus')}
+              >
+                <CardContent className="p-4 text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Zap className="w-5 h-5 mr-2 text-blue-500" />
+                    <h3 className="font-semibold">プラスプラン</h3>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-muted-foreground">
+                      会話時間: {formatTime(PLAN_LIMITS.plus.timeLimit)}
+                    </p>
+                    <p className="text-green-600">
+                      ログアクセス: 可能
+                    </p>
+                    <p className="text-muted-foreground">
+                      外部データ: なし
+                    </p>
+                  </div>
+                  {userPlan.type === 'plus' && (
+                    <Badge className="mt-2">現在のプラン</Badge>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Premium Plan */}
+              <Card 
+                className={`cursor-pointer transition-all ${
+                  userPlan.type === 'premium' 
+                    ? 'border-primary bg-primary/5 shadow-md' 
+                    : 'border-muted hover:border-primary/50'
+                }`}
+                onClick={() => handlePlanChange('premium')}
+              >
+                <CardContent className="p-4 text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Crown className="w-5 h-5 mr-2 text-yellow-500" />
+                    <h3 className="font-semibold">プレミアムプラン</h3>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-muted-foreground">
+                      会話時間: {formatTime(PLAN_LIMITS.premium.timeLimit)}
+                    </p>
+                    <p className="text-green-600">
+                      ログアクセス: 可能
+                    </p>
+                    <p className="text-green-600">
+                      外部データ: 可能
+                    </p>
+                  </div>
+                  {userPlan.type === 'premium' && (
+                    <Badge className="mt-2">現在のプラン</Badge>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              現在はテスト環境のため、すべてのプランを無料でお試しいただけます
+            </p>
           </CardContent>
         </Card>
 

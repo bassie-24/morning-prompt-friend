@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { storageService, CallLog } from '@/utils/storage';
-import { ArrowLeft, ChevronDown, ChevronRight, Clock, MessageSquare, Calendar } from 'lucide-react';
+import { usePlan } from '@/contexts/PlanContext';
+import { ArrowLeft, ChevronDown, ChevronRight, Clock, MessageSquare, Calendar, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CallLogPage = () => {
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
+  const { planLimits } = usePlan();
 
   useEffect(() => {
     const logs = storageService.getCallLogs();
@@ -102,7 +104,22 @@ const CallLogPage = () => {
 
         {/* Call Logs */}
         <div className="space-y-4">
-          {callLogs.length === 0 ? (
+          {!planLimits.hasLogAccess ? (
+            <Card className="fade-in">
+              <CardContent className="p-8 text-center">
+                <Lock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">ログアクセスが制限されています</h3>
+                <p className="text-muted-foreground mb-4">
+                  通話ログを閲覧するにはプラス以上のプランが必要です。
+                </p>
+                <Link to="/settings">
+                  <Button>
+                    プランを変更する
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : callLogs.length === 0 ? (
             <Card className="fade-in">
               <CardContent className="p-8 text-center">
                 <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
