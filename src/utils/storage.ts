@@ -19,10 +19,49 @@ export interface CallLog {
   }>;
 }
 
+export type PlanType = 'free' | 'plus' | 'premium';
+
+export interface Plan {
+  type: PlanType;
+  name: string;
+  timeLimit: number; // in seconds
+  canViewLogs: boolean;
+  canUseSearchMode: boolean;
+  description: string;
+}
+
+export const PLANS: Record<PlanType, Plan> = {
+  free: {
+    type: 'free',
+    name: '無料プラン',
+    timeLimit: 60, // 1 minute
+    canViewLogs: false,
+    canUseSearchMode: false,
+    description: '基本的な朝の準備サポート'
+  },
+  plus: {
+    type: 'plus',
+    name: 'プラスプラン',
+    timeLimit: 180, // 3 minutes
+    canViewLogs: true,
+    canUseSearchMode: false,
+    description: '通話時間延長 + 履歴機能'
+  },
+  premium: {
+    type: 'premium',
+    name: 'プレミアムプラン',
+    timeLimit: 300, // 5 minutes
+    canViewLogs: true,
+    canUseSearchMode: true,
+    description: '全機能 + リアルタイム情報検索'
+  }
+};
+
 const STORAGE_KEYS = {
   INSTRUCTIONS: 'morning_assistant_instructions',
   CALL_LOGS: 'morning_assistant_call_logs',
-  OPENAI_API_KEY: 'morning_assistant_openai_key'
+  OPENAI_API_KEY: 'morning_assistant_openai_key',
+  USER_PLAN: 'morning_assistant_user_plan'
 };
 
 export const storageService = {
@@ -84,5 +123,20 @@ export const storageService = {
 
   saveOpenAIKey(key: string): void {
     localStorage.setItem(STORAGE_KEYS.OPENAI_API_KEY, key);
+  },
+
+  // Plan management
+  getUserPlan(): PlanType {
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_PLAN);
+    return (stored as PlanType) || 'free';
+  },
+
+  setUserPlan(plan: PlanType): void {
+    localStorage.setItem(STORAGE_KEYS.USER_PLAN, plan);
+  },
+
+  getCurrentPlan(): Plan {
+    const planType = this.getUserPlan();
+    return PLANS[planType];
   }
 };

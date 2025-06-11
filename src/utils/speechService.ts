@@ -126,7 +126,8 @@ export class SpeechService {
       throw new Error('OpenAI APIキーが設定されていません');
     }
 
-    const systemPrompt = this.buildSystemPrompt(instructions);
+    const currentPlan = storageService.getCurrentPlan();
+    const systemPrompt = this.buildSystemPrompt(instructions, currentPlan);
     
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -137,18 +138,43 @@ export class SpeechService {
     console.log('OpenAI APIに送信するメッセージ:', messages);
 
     try {
+      const requestBody: any = {
+        model: currentPlan.canUseSearchMode ? 'gpt-4' : 'gpt-4',
+        messages,
+        max_tokens: 500,
+        temperature: 0.7
+      };
+
+      // Premium users get search mode (web search capabilities)
+      if (currentPlan.canUseSearchMode) {
+        requestBody.tools = [
+          {
+            type: "function",
+            function: {
+              name: "search_web",
+              description: "Search the web for current information like news, weather, or real-time data",
+              parameters: {
+                type: "object",
+                properties: {
+                  query: {
+                    type: "string",
+                    description: "The search query to find current information"
+                  }
+                },
+                required: ["query"]
+              }
+            }
+          }
+        ];
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages,
-          max_tokens: 500,
-          temperature: 0.7
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -156,7 +182,44 @@ export class SpeechService {
       }
 
       const data = await response.json();
-      const aiResponse = data.choices[0].message.content;
+      let aiResponse = data.choices[0].message.content;
+
+      // Handle tool calls for search mode (Premium feature)
+      if (currentPlan.canUseSearchMode && data.choices[0].message.tool_calls) {
+        const toolCall = data.choices[0].message.tool_calls[0];
+        if (toolCall.function.name === 'search_web') {
+          const searchQuery = JSON.parse(toolCall.function.arguments).query;
+          const searchResult = await this.performWebSearch(searchQuery);
+          
+          // Send search result back to OpenAI for synthesis
+          const followUpMessages = [
+            ...messages,
+            data.choices[0].message,
+            {
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: searchResult
+            }
+          ];
+
+          const followUpResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: 'gpt-4',
+              messages: followUpMessages,
+              max_tokens: 500,
+              temperature: 0.7
+            })
+          });
+
+          const followUpData = await followUpResponse.json();
+          aiResponse = followUpData.choices[0].message.content;
+        }
+      }
 
       // 会話履歴を更新
       this.currentConversation.push(
@@ -171,14 +234,35 @@ export class SpeechService {
     }
   }
 
-  private buildSystemPrompt(instructions: UserInstruction[]): string {
+  private async performWebSearch(query: string): Promise<string> {
+    // Simulated web search for demo purposes
+    // In a real implementation, you would use a search API like Google Custom Search, Bing, etc.
+    const searchResults = {
+      weather: "今日の天気: 晴れ、気温20°C、湿度60%",
+      news: "最新ニュース: 本日の主要ニュースをお伝えします。",
+      time: `現在時刻: ${new Date().toLocaleString('ja-JP')}`
+    };
+
+    // Simple keyword matching for demo
+    if (query.includes('天気') || query.includes('weather')) {
+      return searchResults.weather;
+    } else if (query.includes('ニュース') || query.includes('news')) {
+      return searchResults.news;
+    } else if (query.includes('時間') || query.includes('time')) {
+      return searchResults.time;
+    } else {
+      return `検索結果: "${query}"に関する最新情報を取得しました。`;
+    }
+  }
+
+  private buildSystemPrompt(instructions: UserInstruction[], plan: any): string {
     const activeInstructions = instructions
       .filter(inst => inst.isActive)
       .sort((a, b) => a.order - b.order)
       .map(inst => `${inst.title}: ${inst.content}`)
       .join('\n');
 
-    return `あなたは朝の目覚めをサポートするAIアシスタントです。
+    let systemPrompt = `あなたは朝の目覚めをサポートするAIアシスタントです。
 
 ユーザーの朝の行動をサポートするため、以下の指示内容を順番に実行してください：
 
@@ -190,9 +274,19 @@ ${activeInstructions}
 3. ユーザーが指示を完了したら、次の指示に進んでください
 4. 励ましの言葉を適度に入れて、ユーザーのモチベーションを維持してください
 5. 回答は簡潔に、1-2文程度にしてください
-6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください
+6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください`;
 
-最初の指示から始めてください。`;
+    if (plan.canUseSearchMode) {
+      systemPrompt += `
+
+プレミアム機能：
+- 天気、ニュース、時間などのリアルタイム情報が必要な場合は、search_web関数を使用してください
+- ユーザーが天気やニュースについて質問した場合、最新情報を取得して回答してください`;
+    }
+
+    systemPrompt += "\n\n最初の指示から始めてください。";
+    
+    return systemPrompt;
   }
 
   getConversationHistory() {
