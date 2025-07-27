@@ -1,10 +1,10 @@
-
 export interface UserInstruction {
   id: string;
   title: string;
   content: string;
   order: number;
   isActive: boolean;
+  useWebSearch?: boolean;
 }
 
 export interface CallLog {
@@ -19,10 +19,21 @@ export interface CallLog {
   }>;
 }
 
+export type UserPlan = 'free' | 'premium';
+
+export interface UserPlanInfo {
+  plan: UserPlan;
+  planDisplayName: string;
+  modelUsed: string;
+  hasSearch: boolean;
+  maxInstructions: number;
+}
+
 const STORAGE_KEYS = {
   INSTRUCTIONS: 'morning_assistant_instructions',
   CALL_LOGS: 'morning_assistant_call_logs',
-  OPENAI_API_KEY: 'morning_assistant_openai_key'
+  OPENAI_API_KEY: 'morning_assistant_openai_key',
+  USER_PLAN: 'morning_assistant_user_plan'
 };
 
 export const storageService = {
@@ -84,5 +95,37 @@ export const storageService = {
 
   saveOpenAIKey(key: string): void {
     localStorage.setItem(STORAGE_KEYS.OPENAI_API_KEY, key);
+  },
+
+  // User plan management
+  getUserPlan(): UserPlan {
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_PLAN);
+    return stored ? JSON.parse(stored) : 'free';
+  },
+
+  setUserPlan(plan: UserPlan): void {
+    localStorage.setItem(STORAGE_KEYS.USER_PLAN, JSON.stringify(plan));
+  },
+
+  getUserPlanInfo(): UserPlanInfo {
+    const plan = this.getUserPlan();
+    
+    if (plan === 'premium') {
+      return {
+        plan: 'premium',
+        planDisplayName: 'プレミアムプラン',
+        modelUsed: 'gpt-4.1',
+        hasSearch: true,
+        maxInstructions: 50
+      };
+    } else {
+      return {
+        plan: 'free',
+        planDisplayName: '無料プラン',
+        modelUsed: 'gpt-4o',
+        hasSearch: false,
+        maxInstructions: 20
+      };
+    }
   }
 };
