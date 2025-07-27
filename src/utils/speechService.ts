@@ -136,12 +136,29 @@ export class SpeechService {
     console.log('🔑 Trimmed API Key length:', apiKey.length);
     console.log('🔑 Trimmed API Key starts with:', apiKey.substring(0, 10));
     
-    // APIキー形式チェック
-    const isValidFormat = /^sk-(proj-)?[a-zA-Z0-9]{48,}/.test(apiKey);
+    // APIキー形式チェック（より柔軟なパターン）
+    const isValidFormat = /^sk-(proj-)?[a-zA-Z0-9_-]{20,}$/.test(apiKey);
     console.log('🔑 API Key format valid:', isValidFormat);
+    console.log('🔑 API Key full length:', apiKey.length);
+    console.log('🔑 API Key contains valid chars:', /^[a-zA-Z0-9_-]+$/.test(apiKey.substring(apiKey.indexOf('-') + 1)));
+    
+    // 基本的な形式チェック（sk-で始まることのみ必須）
+    const basicFormat = apiKey.startsWith('sk-') && apiKey.length > 10;
+    console.log('🔑 Basic format check:', basicFormat);
+    
+    if (!basicFormat) {
+      throw new Error('APIキーは "sk-" で始まり、10文字以上である必要があります。');
+    }
     
     if (!isValidFormat) {
-      throw new Error(`不正なAPIキー形式です。正しいOpenAI APIキー (sk-... または sk-proj-...) を確認してください。`);
+      console.log('🔑 API Key detailed analysis:');
+      console.log('  - Starts with sk-:', apiKey.startsWith('sk-'));
+      console.log('  - Has proj- pattern:', apiKey.includes('proj-'));
+      console.log('  - Total length:', apiKey.length);
+      console.log('  - First 20 chars:', apiKey.substring(0, 20));
+      
+      // 警告として出力するが、エラーで止めない
+      console.warn('⚠️ APIキー形式が想定と異なりますが、基本チェックを通過したため処理を続行します。');
     }
 
     const client = new OpenAI({
