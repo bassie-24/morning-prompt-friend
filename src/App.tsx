@@ -8,6 +8,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PlanProvider } from "@/contexts/PlanContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import OfflineIndicator from "@/components/OfflineIndicator";
+import { initializePlatform, getPlatformInfo, platformLog } from "@/utils/platformUtils";
+import NotificationService from "@/services/NotificationService";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
 import CallLog from "./pages/CallLog";
@@ -18,20 +20,47 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    // PWA Service Worker の自動更新設定
-    const updateSW = registerSW({
-      onNeedRefresh() {
-        console.log('新しいバージョンが利用可能です');
-        // 自動更新を実行
-        updateSW(true);
-      },
-      onOfflineReady() {
-        console.log('アプリがオフラインで利用可能になりました');
-      },
-      onRegisterError(error) {
-        console.log('Service Worker登録エラー:', error);
-      },
-    });
+    const initializeApp = async () => {
+      try {
+        // プラットフォーム初期化
+        await initializePlatform();
+        const platform = getPlatformInfo();
+        
+        platformLog('App initialized', {
+          platform: platform.isIOS ? 'iOS' : platform.isAndroid ? 'Android' : platform.isPWA ? 'PWA' : 'Web',
+          isNative: platform.isNative,
+          isDev: import.meta.env.DEV
+        });
+
+        // 通知サービス初期化（ネイティブまたはPWA環境）
+        if (platform.isNative || platform.isPWA) {
+          const notificationService = NotificationService.getInstance();
+          const initialized = await notificationService.initialize();
+          platformLog('Notification service initialized:', initialized);
+        }
+
+        // PWA Service Worker 設定（Web/PWA環境）
+        if (!platform.isNative) {
+          const updateSW = registerSW({
+            onNeedRefresh() {
+              platformLog('新しいバージョンが利用可能です');
+              updateSW(true);
+            },
+            onOfflineReady() {
+              platformLog('アプリがオフラインで利用可能になりました');
+            },
+            onRegisterError(error) {
+              platformLog('Service Worker登録エラー:', error);
+            },
+          });
+        }
+
+      } catch (error) {
+        console.error('App initialization failed:', error);
+      }
+    };
+
+    initializeApp();
   }, []);
 
   return (
