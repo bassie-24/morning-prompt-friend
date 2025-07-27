@@ -34,6 +34,8 @@ const STORAGE_KEYS = {
   CALL_LOGS: 'morning_assistant_call_logs',
   OPENAI_API_KEY: 'morning_assistant_openai_key',
   USER_PLAN: 'morning_assistant_user_plan'
+  OPENAI_API_KEY: 'morning_assistant_openai_key',
+  USER_PLAN: 'morning_assistant_user_plan'
 };
 
 export const storageService = {

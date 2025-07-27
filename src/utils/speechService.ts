@@ -188,7 +188,7 @@ export class SpeechService {
     }
   }
 
-  private buildSystemPrompt(instructions: UserInstruction[]): string {
+  private buildSystemPrompt(instructions: UserInstruction[], hasExternalData: boolean = false): string {
     const activeInstructions = instructions
       .filter(inst => inst.isActive)
       .sort((a, b) => a.order - b.order)
@@ -200,6 +200,13 @@ export class SpeechService {
         return instructionText;
       })
       .join('\n');
+
+    const externalDataInfo = hasExternalData ? `
+
+プレミアムプラン限定機能：
+- 必要に応じて、最新のニュース、天気予報、日付/時刻情報を含めることができます
+- 朝のスケジュールに関連する情報があれば積極的に提供してください
+- ただし、実際の外部データにはアクセスできないため、一般的な情報や推測で回答してください` : '';
 
     return `あなたは朝の目覚めをサポートするAIアシスタントです。
 

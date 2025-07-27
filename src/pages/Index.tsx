@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { storageService, UserInstruction } from '@/utils/storage';
+import { usePlan } from '@/contexts/PlanContext';
 import { SpeechService } from '@/utils/speechService';
-import { Mic, MicOff, Phone, PhoneOff, Settings, FileText } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Settings, FileText, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
@@ -17,18 +19,57 @@ const Index = () => {
   const [instructions, setInstructions] = useState<UserInstruction[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
+  const [remainingTime, setRemainingTime] = useState(0);
   const speechServiceRef = useRef<SpeechService | null>(null);
+  const timeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // 最新の isCallActive 状態を useRef で管理（クロージャ問題を解決）
   const isCallActiveRef = useRef(false);
   
   const { toast } = useToast();
+  const { userPlan, planLimits } = usePlan();
 
   // isCallActive を安全に更新する関数
   const updateCallActiveState = (active: boolean) => {
     console.log(`📱 通話状態を更新: ${active}`);
     setIsCallActive(active);
     isCallActiveRef.current = active;
+  };
+
+  // 時間フォーマット関数
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // タイマー開始
+  const startTimer = () => {
+    setRemainingTime(planLimits.timeLimit);
+    timeIntervalRef.current = setInterval(() => {
+      setRemainingTime(prev => {
+        if (prev <= 1) {
+          // 時間切れ
+          endCall();
+          toast({
+            title: "通話時間終了",
+            description: "プランの制限時間に達したため通話を終了しました。",
+            variant: "destructive"
+          });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // タイマー停止
+  const stopTimer = () => {
+    if (timeIntervalRef.current) {
+      clearInterval(timeIntervalRef.current);
+      timeIntervalRef.current = null;
+    }
+    setRemainingTime(0);
   };
 
   useEffect(() => {
@@ -39,6 +80,13 @@ const Index = () => {
     setInstructions(savedInstructions);
     
     speechServiceRef.current = new SpeechService();
+
+    // クリーンアップ: コンポーネントアンマウント時にタイマーをクリア
+    return () => {
+      if (timeIntervalRef.current) {
+        clearInterval(timeIntervalRef.current);
+      }
+    };
   }, []);
 
   const saveApiKey = () => {
@@ -80,6 +128,7 @@ const Index = () => {
       console.log('isCallActive (状態):', isCallActive);
       console.log('isCallActiveRef (最新値):', isCallActiveRef.current);
       setCallStartTime(new Date());
+      startTimer(); // タイマー開始
       speechServiceRef.current?.resetConversation();
       
       setCurrentMessage("おはようございます！朝の準備を始めましょう。");
@@ -137,6 +186,7 @@ const Index = () => {
   const endCall = () => {
     console.log('🛑 endCall: isCallActiveをfalseに設定します');
     updateCallActiveState(false);
+    stopTimer(); // タイマー停止
     setIsListening(false);
     setIsSpeaking(false);
     setCurrentMessage('');
@@ -282,12 +332,19 @@ const Index = () => {
                 設定
               </Button>
             </Link>
-            <Link to="/logs">
-              <Button variant="outline" size="sm">
+            {planLimits.hasLogAccess ? (
+              <Link to="/logs">
+                <Button variant="outline" size="sm">
+                  <FileText className="w-4 h-4 mr-2" />
+                  ログ
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" disabled title="プラス以上のプランでログが閲覧できます">
                 <FileText className="w-4 h-4 mr-2" />
                 ログ
               </Button>
-            </Link>
+            )}
           </div>
         </div>
 
@@ -340,6 +397,12 @@ const Index = () => {
                   <div>
                     <h2 className="text-2xl font-semibold mb-2">通話中</h2>
                     <div className="space-y-2">
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <Clock className="w-4 h-4" />
+                        <span className={`font-mono text-lg ${remainingTime <= 30 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                          残り: {formatTime(remainingTime)}
+                        </span>
+                      </div>
                       {isSpeaking && (
                         <p className="text-primary font-medium">🎤 AIが話しています...</p>
                       )}
