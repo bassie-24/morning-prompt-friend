@@ -3,8 +3,8 @@ import { storageService, UserPlan, PlanType, PLAN_LIMITS } from '@/utils/storage
 
 interface PlanContextType {
   userPlan: UserPlan;
-  updatePlan: (planType: PlanType) => void;
-  planLimits: typeof PLAN_LIMITS[PlanType];
+  updatePlan: (planType: UserPlan) => void;
+  planLimits: typeof PLAN_LIMITS[keyof typeof PLAN_LIMITS];
 }
 
 const PlanContext = createContext<PlanContextType | undefined>(undefined);
@@ -24,12 +24,18 @@ interface PlanProviderProps {
 export const PlanProvider: React.FC<PlanProviderProps> = ({ children }) => {
   const [userPlan, setUserPlan] = useState<UserPlan>(() => storageService.getUserPlan());
 
-  const updatePlan = (planType: PlanType) => {
-    storageService.updateUserPlan(planType);
-    setUserPlan(storageService.getUserPlan());
+  const updatePlan = (planType: UserPlan) => {
+    storageService.setUserPlan(planType);
+    setUserPlan(planType);
   };
 
-  const planLimits = PLAN_LIMITS[userPlan.type];
+  // UserPlanをPLAN_LIMITSのキーにマッピング
+  const getPlanLimits = (plan: UserPlan) => {
+    if (plan === 'premium') return PLAN_LIMITS.premium;
+    return PLAN_LIMITS.free; // デフォルトは free
+  };
+
+  const planLimits = getPlanLimits(userPlan);
 
   useEffect(() => {
     // 初期プランがない場合はfreeプランを設定
