@@ -122,9 +122,26 @@ export class SpeechService {
   }
 
   async sendToOpenAI(message: string, instructions: UserInstruction[]): Promise<string> {
-    const apiKey = storageService.getOpenAIKey();
-    if (!apiKey) {
+    const rawApiKey = storageService.getOpenAIKey();
+    console.log('🔑 Raw API Key from storage:', rawApiKey ? `${rawApiKey.substring(0, 10)}...${rawApiKey.substring(rawApiKey.length-10)}` : 'null');
+    console.log('🔑 API Key length:', rawApiKey?.length || 0);
+    console.log('🔑 API Key starts with:', rawApiKey?.substring(0, 10) || 'none');
+    
+    if (!rawApiKey) {
       throw new Error('OpenAI APIキーが設定されていません');
+    }
+    
+    // APIキーをtrimして使用
+    const apiKey = rawApiKey.trim();
+    console.log('🔑 Trimmed API Key length:', apiKey.length);
+    console.log('🔑 Trimmed API Key starts with:', apiKey.substring(0, 10));
+    
+    // APIキー形式チェック
+    const isValidFormat = /^sk-(proj-)?[a-zA-Z0-9]{48,}/.test(apiKey);
+    console.log('🔑 API Key format valid:', isValidFormat);
+    
+    if (!isValidFormat) {
+      throw new Error(`不正なAPIキー形式です。正しいOpenAI APIキー (sk-... または sk-proj-...) を確認してください。`);
     }
 
     const client = new OpenAI({

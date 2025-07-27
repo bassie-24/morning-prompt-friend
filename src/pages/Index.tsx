@@ -120,7 +120,17 @@ const Index = () => {
 
   const saveApiKey = () => {
     if (apiKey.trim()) {
-      storageService.saveOpenAIKey(apiKey.trim());
+      const trimmedKey = apiKey.trim();
+      console.log('🔑 Saving API Key length:', trimmedKey.length);
+      console.log('🔑 Saving API Key starts with:', trimmedKey.substring(0, 10));
+      
+      storageService.saveOpenAIKey(trimmedKey);
+      
+      // 保存後の確認
+      const savedKey = storageService.getOpenAIKey();
+      console.log('🔑 Saved API Key verification length:', savedKey?.length || 0);
+      console.log('🔑 Saved API Key verification starts with:', savedKey?.substring(0, 10) || 'none');
+      
       toast({
         title: "APIキーを保存しました",
         description: "OpenAI APIキーが正常に保存されました。"
@@ -129,10 +139,29 @@ const Index = () => {
   };
 
   const startCall = async () => {
-    if (!apiKey.trim()) {
+    // APIキーの詳細チェック
+    const stateApiKey = apiKey.trim();
+    const storageApiKey = storageService.getOpenAIKey();
+    
+    console.log('🔑 State API Key length:', stateApiKey.length);
+    console.log('🔑 State API Key starts with:', stateApiKey.substring(0, 10) || 'none');
+    console.log('🔑 Storage API Key length:', storageApiKey?.length || 0);
+    console.log('🔑 Storage API Key starts with:', storageApiKey?.substring(0, 10) || 'none');
+    console.log('🔑 Keys match:', stateApiKey === storageApiKey);
+    
+    if (!stateApiKey) {
       toast({
         title: "エラー",
         description: "OpenAI APIキーを入力してください。",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!storageApiKey) {
+      toast({
+        title: "エラー",
+        description: "APIキーが保存されていません。設定画面で保存してください。",
         variant: "destructive"
       });
       return;
