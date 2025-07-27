@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,15 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { storageService, UserInstruction } from '@/utils/storage';
-import { ArrowLeft, Plus, Trash2, GripVertical } from 'lucide-react';
+import { storageService, UserInstruction, UserPlan } from '@/utils/storage';
+import { ArrowLeft, Plus, Trash2, GripVertical, Crown, Zap, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Settings = () => {
   const [instructions, setInstructions] = useState<UserInstruction[]>([]);
   const [newInstruction, setNewInstruction] = useState({ title: '', content: '' });
   const [apiKey, setApiKey] = useState('');
+  const [userPlan, setUserPlan] = useState<UserPlan>('free');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -23,6 +24,9 @@ const Settings = () => {
     
     const savedKey = storageService.getOpenAIKey();
     if (savedKey) setApiKey(savedKey);
+
+    const currentPlan = storageService.getUserPlan();
+    setUserPlan(currentPlan);
   }, []);
 
   const addInstruction = () => {
@@ -100,7 +104,49 @@ const Settings = () => {
     }
   };
 
+  const toggleWebSearch = (id: string, useWebSearch: boolean) => {
+    const planInfo = storageService.getUserPlanInfo();
+    
+    if (useWebSearch && !planInfo.hasSearch) {
+      toast({
+        title: "プレミアムプラン限定機能",
+        description: "Web検索機能はプレミアムプランでのみ利用できます。",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedInstructions = instructions.map(inst =>
+      inst.id === id ? { ...inst, useWebSearch } : inst
+    );
+    setInstructions(updatedInstructions);
+    storageService.saveInstructions(updatedInstructions);
+  };
+
+  const changePlan = (newPlan: UserPlan) => {
+    storageService.setUserPlan(newPlan);
+    setUserPlan(newPlan);
+    
+    const planInfo = storageService.getUserPlanInfo();
+    
+    // 無料プランに変更した場合、全てのweb検索モードをOFFにする
+    if (newPlan === 'free') {
+      const updatedInstructions = instructions.map(inst => ({
+        ...inst,
+        useWebSearch: false
+      }));
+      setInstructions(updatedInstructions);
+      storageService.saveInstructions(updatedInstructions);
+    }
+    
+    toast({
+      title: "プランを変更しました",
+      description: `${planInfo.planDisplayName}に変更されました。使用モデル: ${planInfo.modelUsed}`
+    });
+  };
+
   const sortedInstructions = [...instructions].sort((a, b) => a.order - b.order);
+  const planInfo = storageService.getUserPlanInfo();
 
   return (
     <div className="min-h-screen morning-gradient p-4">
@@ -118,6 +164,90 @@ const Settings = () => {
             <p className="text-muted-foreground">AIに実行してもらう指示を管理します</p>
           </div>
         </div>
+
+        {/* Plan Selection */}
+        <Card className="fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5" />
+              プラン選択
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 無料プラン */}
+              <Card className={`cursor-pointer transition-all ${
+                planInfo.plan === 'free' 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-muted hover:border-primary/50'
+              }`} onClick={() => changePlan('free')}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold">無料プラン</h3>
+                    {planInfo.plan === 'free' && (
+                      <Badge variant="default">現在のプラン</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p>• 使用モデル: gpt-4o-mini</p>
+                    <p>• 最大指示数: 20件</p>
+                    <p>• Web検索機能: なし</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* プレミアムプラン */}
+              <Card className={`cursor-pointer transition-all ${
+                planInfo.plan === 'premium' 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-muted hover:border-primary/50'
+              }`} onClick={() => changePlan('premium')}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold flex items-center gap-1">
+                      <Zap className="w-4 h-4 text-yellow-500" />
+                      プレミアムプラン
+                    </h3>
+                    {planInfo.plan === 'premium' && (
+                      <Badge variant="default">現在のプラン</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p>• 使用モデル: gpt-4.1 (最新)</p>
+                    <p>• 最大指示数: 50件</p>
+                    <p>• Web検索機能: 対応</p>
+                    <p>• リアルタイム情報取得</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mt-4 p-4 bg-accent/20 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="w-4 h-4 text-primary" />
+                <span className="font-medium">現在の設定</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">プラン:</span>
+                  <span className="ml-2 font-medium">{planInfo.planDisplayName}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">使用モデル:</span>
+                  <span className="ml-2 font-medium">{planInfo.modelUsed}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">最大指示数:</span>
+                  <span className="ml-2 font-medium">{planInfo.maxInstructions}件</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Web検索機能:</span>
+                  <span className="ml-2 font-medium">{planInfo.hasSearch ? '対応' : '非対応'}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* API Key Settings */}
         <Card className="fade-in">
@@ -153,6 +283,16 @@ const Settings = () => {
             <CardTitle>新しい指示を追加</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {instructions.length >= planInfo.maxInstructions && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <span className="font-medium">制限に達しました:</span> 
+                  {planInfo.planDisplayName}では最大{planInfo.maxInstructions}件までの指示を登録できます。
+                  {planInfo.plan === 'free' && ' プレミアムプランにアップグレードすると50件まで登録できます。'}
+                </p>
+              </div>
+            )}
+            
             <div>
               <Label htmlFor="title">タイトル</Label>
               <Input
@@ -160,6 +300,7 @@ const Settings = () => {
                 placeholder="例: 水を飲む"
                 value={newInstruction.title}
                 onChange={(e) => setNewInstruction(prev => ({ ...prev, title: e.target.value }))}
+                disabled={instructions.length >= planInfo.maxInstructions}
               />
             </div>
             <div>
@@ -170,9 +311,14 @@ const Settings = () => {
                 value={newInstruction.content}
                 onChange={(e) => setNewInstruction(prev => ({ ...prev, content: e.target.value }))}
                 rows={3}
+                disabled={instructions.length >= planInfo.maxInstructions}
               />
             </div>
-            <Button onClick={addInstruction} className="w-full">
+            <Button 
+              onClick={addInstruction} 
+              className="w-full"
+              disabled={instructions.length >= planInfo.maxInstructions}
+            >
               <Plus className="w-4 h-4 mr-2" />
               指示を追加
             </Button>
@@ -183,7 +329,7 @@ const Settings = () => {
         <Card className="fade-in">
           <CardHeader>
             <CardTitle>
-              登録済み指示 ({instructions.filter(inst => inst.isActive).length}件がアクティブ)
+              登録済み指示 ({instructions.filter(inst => inst.isActive).length}件がアクティブ / {planInfo.maxInstructions}件まで)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -217,6 +363,12 @@ const Settings = () => {
                               <span className="text-xs bg-muted px-2 py-1 rounded">
                                 {instruction.order}
                               </span>
+                              {instruction.useWebSearch && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Search className="w-3 h-3 mr-1" />
+                                  Web検索
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-sm text-muted-foreground">
                               {instruction.content}
@@ -224,14 +376,27 @@ const Settings = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={instruction.isActive}
-                              onCheckedChange={(checked) => toggleInstruction(instruction.id, checked)}
-                            />
-                            <Label className="text-xs">
-                              {instruction.isActive ? 'ON' : 'OFF'}
-                            </Label>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={instruction.isActive}
+                                onCheckedChange={(checked) => toggleInstruction(instruction.id, checked)}
+                              />
+                              <Label className="text-xs">
+                                {instruction.isActive ? 'ON' : 'OFF'}
+                              </Label>
+                            </div>
+                            {planInfo.hasSearch && (
+                              <div className="flex items-center space-x-2">
+                                                                 <Switch
+                                   checked={instruction.useWebSearch || false}
+                                   onCheckedChange={(checked) => toggleWebSearch(instruction.id, checked)}
+                                 />
+                                <Label className="text-xs text-muted-foreground">
+                                  Web検索
+                                </Label>
+                              </div>
+                            )}
                           </div>
                           <Button
                             variant="ghost"
@@ -268,12 +433,12 @@ const Settings = () => {
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium text-foreground mb-1">指示の例:</h4>
+                <h4 className="font-medium text-foreground mb-1">Web検索機能について:</h4>
                 <ul className="space-y-1 ml-4">
-                  <li>• 「ベッドから起き上がって、軽くストレッチをしてください」</li>
-                  <li>• 「洗面所で顔を洗い、歯を磨いてください」</li>
-                  <li>• 「キッチンで水を1杯飲んでください」</li>
-                  <li>• 「今日の予定を確認してください」</li>
+                  <li>• プレミアムプランでのみ利用可能</li>
+                  <li>• 最新の天気、ニュース、為替情報などを取得</li>
+                  <li>• 「今日の天気を確認してください」などの指示に最適</li>
+                  <li>• 必要に応じてリアルタイム情報を検索して回答</li>
                 </ul>
               </div>
             </div>

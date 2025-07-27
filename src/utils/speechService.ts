@@ -1,5 +1,6 @@
-
+import { ChatCompletionMessageParam } from 'openai/resources/chat/completions.mjs';
 import { storageService, UserInstruction } from './storage';
+import OpenAI from "openai";
 
 // Web Speech API の型宣言
 declare global {
@@ -126,37 +127,53 @@ export class SpeechService {
       throw new Error('OpenAI APIキーが設定されていません');
     }
 
+    const client = new OpenAI({
+      apiKey: apiKey,
+      dangerouslyAllowBrowser: true, 
+    });
+    
+    const planInfo = storageService.getUserPlanInfo();
     const systemPrompt = this.buildSystemPrompt(instructions);
     
-    const messages = [
+    const messages: ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt },
       ...this.currentConversation,
       { role: 'user', content: message }
     ];
 
-    console.log('OpenAI APIに送信するメッセージ:', messages);
+    console.log(`OpenAI APIに送信するメッセージ (${planInfo.planDisplayName} - ${planInfo.modelUsed}):`, messages);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages,
+      // アクティブな指示でweb検索を使用するものがあるかチェック
+      const activeInstructions = instructions.filter(inst => inst.isActive);
+      const useWebSearch = planInfo.hasSearch && activeInstructions.some(inst => inst.useWebSearch);
+      
+      let aiResponse: string;
+
+      if (useWebSearch) {
+        // web検索機能付きのResponse APIを使用
+        console.log('🔍 Web検索機能付きResponse APIを使用します');
+        
+        const response = await client.responses.create({
+          model: planInfo.modelUsed,
+          tools: [{ type: "web_search_preview" }],
+          input: `${systemPrompt}\n\nユーザー: ${message}`,
+        });
+
+        aiResponse = response.output_text || "申し訳ございませんが、応答を生成できませんでした。";
+      } else {
+        // 通常のChat Completions APIを使用
+        console.log('💬 通常のChat Completions APIを使用します');
+        
+        const response = await client.chat.completions.create({
+          model: planInfo.modelUsed,
+          messages: messages,
           max_tokens: 500,
-          temperature: 0.7
-        })
-      });
+          temperature: 0.7,
+        });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API エラー: ${response.status}`);
+        aiResponse = response.choices[0].message.content || "申し訳ございませんが、応答を生成できませんでした。";
       }
-
-      const data = await response.json();
-      const aiResponse = data.choices[0].message.content;
 
       // 会話履歴を更新
       this.currentConversation.push(
@@ -175,7 +192,13 @@ export class SpeechService {
     const activeInstructions = instructions
       .filter(inst => inst.isActive)
       .sort((a, b) => a.order - b.order)
-      .map(inst => `${inst.title}: ${inst.content}`)
+      .map(inst => {
+        let instructionText = `${inst.title}: ${inst.content}`;
+        if (inst.useWebSearch) {
+          instructionText += ' (必要に応じて最新情報を検索して回答)';
+        }
+        return instructionText;
+      })
       .join('\n');
 
     return `あなたは朝の目覚めをサポートするAIアシスタントです。
@@ -191,6 +214,7 @@ ${activeInstructions}
 4. 励ましの言葉を適度に入れて、ユーザーのモチベーションを維持してください
 5. 回答は簡潔に、1-2文程度にしてください
 6. 全ての指示が完了したら、お疲れ様でしたと伝えて終了してください
+7. web検索機能が有効な指示では、必要に応じて最新の情報を検索して回答してください
 
 最初の指示から始めてください。`;
   }

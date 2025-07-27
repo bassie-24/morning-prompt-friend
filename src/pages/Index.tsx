@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -254,6 +253,9 @@ const Index = () => {
     }
   };
 
+  const planInfo = storageService.getUserPlanInfo();
+  const webSearchInstructions = instructions.filter(inst => inst.isActive && inst.useWebSearch).length;
+
   return (
     <div className="min-h-screen morning-gradient p-4">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -262,6 +264,16 @@ const Index = () => {
           <div>
             <h1 className="text-3xl font-bold text-foreground">朝のAIアシスタント</h1>
             <p className="text-muted-foreground">音声で朝の準備をサポートします</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-sm text-muted-foreground">プラン:</span>
+              <span className="text-sm font-medium">{planInfo.planDisplayName}</span>
+              <span className="text-sm text-muted-foreground">• モデル: {planInfo.modelUsed}</span>
+              {planInfo.hasSearch && webSearchInstructions > 0 && (
+                <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                  Web検索対応 ({webSearchInstructions}件)
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex gap-2">
             <Link to="/settings">
@@ -316,8 +328,13 @@ const Index = () => {
                   <div>
                     <h2 className="text-2xl font-semibold mb-2">通話を開始する準備ができました</h2>
                     <p className="text-muted-foreground">
-                      アクティブな指示: {instructions.filter(inst => inst.isActive).length}件
+                      アクティブな指示: {instructions.filter(inst => inst.isActive).length}件 / {planInfo.maxInstructions}件まで
                     </p>
+                    {planInfo.hasSearch && webSearchInstructions > 0 && (
+                      <p className="text-sm text-primary font-medium mt-2">
+                        ✨ Web検索機能: {webSearchInstructions}件の指示でリアルタイム情報検索が利用できます
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div>
@@ -400,6 +417,18 @@ const Index = () => {
                 <li>• 通話中はAIの指示に従って行動し、完了したら口頭で報告してください</li>
                 <li>• 音声認識がうまくいかない場合は、はっきりと話してください</li>
                 <li>• 通話ログは自動的に保存され、後で確認できます</li>
+                {planInfo.hasSearch && webSearchInstructions > 0 && (
+                  <>
+                    <li>• <strong>Web検索機能:</strong> 「今日の天気は？」「何時ですか？」「最新ニュースは？」などの質問もできます</li>
+                    <li>• AIが必要に応じてリアルタイム情報を検索して回答します</li>
+                  </>
+                )}
+                {planInfo.hasSearch && webSearchInstructions === 0 && (
+                  <li>• 設定で個別の指示にWeb検索機能を有効にすると、リアルタイム情報が利用できます</li>
+                )}
+                {!planInfo.hasSearch && (
+                  <li>• プレミアムプランにアップグレードすると、Web検索機能が利用できます</li>
+                )}
               </ul>
             </CardContent>
           </Card>
