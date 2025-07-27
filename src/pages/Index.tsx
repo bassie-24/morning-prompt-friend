@@ -76,7 +76,36 @@ const Index = () => {
     const savedKey = storageService.getOpenAIKey();
     if (savedKey) setApiKey(savedKey);
     
-    const savedInstructions = storageService.getInstructions();
+    let savedInstructions = storageService.getInstructions();
+    
+    // 指示が0件の場合、デフォルト指示を自動追加
+    if (savedInstructions.length === 0) {
+      const defaultInstructions = [
+        {
+          title: '朝の基本準備',
+          content: '朝の基本的な準備についてアドバイスしてください。天気、予定の確認、健康チェック、朝食の提案など、一般的な朝のルーティンをサポートしてください。',
+          order: 1,
+          isActive: true,
+          useWebSearch: false
+        },
+        {
+          title: 'モチベーション向上',
+          content: '1日を前向きに始められるような励ましの言葉や、やる気を引き出すアドバイスを提供してください。',
+          order: 2,
+          isActive: true,
+          useWebSearch: false
+        }
+      ];
+      
+      // デフォルト指示を保存
+      defaultInstructions.forEach(instruction => {
+        storageService.addInstruction(instruction);
+      });
+      
+      savedInstructions = storageService.getInstructions();
+      console.log('🎯 デフォルト指示を追加しました:', savedInstructions.length + '件');
+    }
+    
     setInstructions(savedInstructions);
     
     speechServiceRef.current = new SpeechService();
