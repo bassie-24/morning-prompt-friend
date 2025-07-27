@@ -309,64 +309,75 @@ const Index = () => {
   return (
     <div className="min-h-screen morning-gradient p-4">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">朝のAIアシスタント</h1>
-            <p className="text-muted-foreground">音声で朝の準備をサポートします</p>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-muted-foreground">プラン:</span>
-              <span className="text-sm font-medium">{planInfo.planDisplayName}</span>
-              <span className="text-sm text-muted-foreground">• モデル: {planInfo.modelUsed}</span>
+        {/* Header - Mobile First Responsive */}
+        <div className="space-y-4 sm:space-y-0 sm:flex sm:justify-between sm:items-start">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">朝のAIアシスタント</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">音声で朝の準備をサポートします</p>
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1 text-xs sm:text-sm">
+              <span className="text-muted-foreground">プラン:</span>
+              <span className="font-medium">{planInfo.planDisplayName}</span>
+              <span className="text-muted-foreground hidden sm:inline">• モデル: {planInfo.modelUsed}</span>
+              <span className="text-muted-foreground sm:hidden">• {planInfo.modelUsed}</span>
               {planInfo.hasSearch && webSearchInstructions > 0 && (
-                <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded whitespace-nowrap">
                   Web検索対応 ({webSearchInstructions}件)
                 </span>
               )}
             </div>
           </div>
-          <div className="flex gap-2">
-            <Link to="/settings">
-              <Button variant="outline" size="sm">
+          <div className="flex gap-2 sm:gap-3 sm:ml-4">
+            <Link to="/settings" className="flex-1 sm:flex-none">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto min-h-[44px] text-sm">
                 <Settings className="w-4 h-4 mr-2" />
-                設定
+                <span className="sm:inline">設定</span>
               </Button>
             </Link>
             {planLimits.hasLogAccess ? (
-              <Link to="/logs">
-                <Button variant="outline" size="sm">
+              <Link to="/logs" className="flex-1 sm:flex-none">
+                <Button variant="outline" size="sm" className="w-full sm:w-auto min-h-[44px] text-sm">
                   <FileText className="w-4 h-4 mr-2" />
-                  ログ
+                  <span className="sm:inline">ログ</span>
                 </Button>
               </Link>
             ) : (
-              <Button variant="outline" size="sm" disabled title="プラス以上のプランでログが閲覧できます">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled 
+                title="プラス以上のプランでログが閲覧できます"
+                className="flex-1 sm:flex-none w-full sm:w-auto min-h-[44px] text-sm"
+              >
                 <FileText className="w-4 h-4 mr-2" />
-                ログ
+                <span className="sm:inline">ログ</span>
               </Button>
             )}
           </div>
         </div>
 
-        {/* API Key Setup */}
+        {/* API Key Setup - Mobile Optimized */}
         {!storageService.getOpenAIKey() && (
           <Card className="fade-in">
             <CardHeader>
-              <CardTitle>初期設定</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">初期設定</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="apiKey">OpenAI APIキー</Label>
-                <div className="flex gap-2 mt-1">
+                <Label htmlFor="apiKey" className="text-sm sm:text-base">OpenAI APIキー</Label>
+                <div className="flex flex-col sm:flex-row gap-2 mt-1">
                   <Input
                     id="apiKey"
                     type="password"
                     placeholder="sk-..."
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    className="flex-1"
+                    className="flex-1 min-h-[44px] text-sm sm:text-base"
                   />
-                  <Button onClick={saveApiKey} variant="outline">
+                  <Button 
+                    onClick={saveApiKey} 
+                    variant="outline"
+                    className="min-h-[44px] px-6 sm:px-4 w-full sm:w-auto"
+                  >
                     保存
                   </Button>
                 </div>
@@ -375,66 +386,66 @@ const Index = () => {
           </Card>
         )}
 
-        {/* Main Call Interface */}
+        {/* Main Call Interface - Mobile Optimized */}
         <Card className="fade-in">
-          <CardContent className="p-8">
-            <div className="text-center space-y-6">
+          <CardContent className="p-4 sm:p-6 md:p-8">
+            <div className="text-center space-y-4 sm:space-y-6">
               {/* Call Status */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {!isCallActive ? (
                   <div>
-                    <h2 className="text-2xl font-semibold mb-2">通話を開始する準備ができました</h2>
-                    <p className="text-muted-foreground">
+                    <h2 className="text-xl sm:text-2xl font-semibold mb-2">通話を開始する準備ができました</h2>
+                    <p className="text-sm sm:text-base text-muted-foreground">
                       アクティブな指示: {instructions.filter(inst => inst.isActive).length}件 / {planInfo.maxInstructions}件まで
                     </p>
                     {planInfo.hasSearch && webSearchInstructions > 0 && (
-                      <p className="text-sm text-primary font-medium mt-2">
+                      <p className="text-xs sm:text-sm text-primary font-medium mt-2">
                         ✨ Web検索機能: {webSearchInstructions}件の指示でリアルタイム情報検索が利用できます
                       </p>
                     )}
                   </div>
                 ) : (
                   <div>
-                    <h2 className="text-2xl font-semibold mb-2">通話中</h2>
+                    <h2 className="text-xl sm:text-2xl font-semibold mb-2">通話中</h2>
                     <div className="space-y-2">
                       <div className="flex items-center justify-center gap-2 mb-3">
-                        <Clock className="w-4 h-4" />
-                        <span className={`font-mono text-lg ${remainingTime <= 30 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                        <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className={`font-mono text-base sm:text-lg ${remainingTime <= 30 ? 'text-red-500' : 'text-muted-foreground'}`}>
                           残り: {formatTime(remainingTime)}
                         </span>
                       </div>
                       {isSpeaking && (
-                        <p className="text-primary font-medium">🎤 AIが話しています...</p>
+                        <p className="text-sm sm:text-base text-primary font-medium">🎤 AIが話しています...</p>
                       )}
                       {isListening && (
-                        <p className="text-secondary font-medium">👂 あなたの声を待っています...</p>
+                        <p className="text-sm sm:text-base text-secondary font-medium">👂 あなたの声を待っています...</p>
                       )}
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Current Message Display */}
+              {/* Current Message Display - Mobile Optimized */}
               {currentMessage && (
                 <Card className="bg-accent/20 border-accent">
-                  <CardContent className="p-4">
-                    <p className="text-sm">{currentMessage}</p>
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-xs sm:text-sm leading-relaxed">{currentMessage}</p>
                   </CardContent>
                 </Card>
               )}
 
-              {/* Call Control Button */}
+              {/* Call Control Button - Mobile Touch Optimized */}
               <div className="flex justify-center">
                 {!isCallActive ? (
                   <Button
                     onClick={startCall}
                     size="lg"
-                    className="w-32 h-32 rounded-full text-lg font-semibold"
+                    className="w-28 h-28 sm:w-32 sm:h-32 rounded-full text-base sm:text-lg font-semibold touch-manipulation"
                     disabled={!apiKey.trim() || instructions.filter(inst => inst.isActive).length === 0}
                   >
-                    <div className="flex flex-col items-center gap-2">
-                      <Phone className="w-8 h-8" />
-                      <span>通話開始</span>
+                    <div className="flex flex-col items-center gap-1 sm:gap-2">
+                      <Phone className="w-6 h-6 sm:w-8 sm:h-8" />
+                      <span className="text-xs sm:text-sm">通話開始</span>
                     </div>
                   </Button>
                 ) : (
@@ -442,25 +453,25 @@ const Index = () => {
                     onClick={endCall}
                     size="lg"
                     variant="destructive"
-                    className={`w-32 h-32 rounded-full text-lg font-semibold ${
+                    className={`w-28 h-28 sm:w-32 sm:h-32 rounded-full text-base sm:text-lg font-semibold touch-manipulation ${
                       isSpeaking ? 'speaking-animation' : 
                       isListening ? 'listening-animation' : ''
                     }`}
                   >
-                    <div className="flex flex-col items-center gap-2">
-                      <PhoneOff className="w-8 h-8" />
-                      <span>通話終了</span>
+                    <div className="flex flex-col items-center gap-1 sm:gap-2">
+                      <PhoneOff className="w-6 h-6 sm:w-8 sm:h-8" />
+                      <span className="text-xs sm:text-sm">通話終了</span>
                     </div>
                   </Button>
                 )}
               </div>
 
-              {/* Status Icons */}
+              {/* Status Icons - Mobile Optimized */}
               {isCallActive && (
-                <div className="flex justify-center gap-4 text-muted-foreground">
+                <div className="flex justify-center gap-3 sm:gap-4 text-muted-foreground">
                   <div className={`flex items-center gap-2 ${isListening ? 'text-primary' : ''}`}>
-                    {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-                    <span className="text-sm">
+                    {isListening ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    <span className="text-xs sm:text-sm">
                       {isListening ? '音声認識中' : '待機中'}
                     </span>
                   </div>

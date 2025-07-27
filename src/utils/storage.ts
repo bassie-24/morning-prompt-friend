@@ -20,6 +20,7 @@ export interface CallLog {
 }
 
 export type UserPlan = 'free' | 'premium';
+export type PlanType = 'free' | 'plus' | 'premium';
 
 export interface UserPlanInfo {
   plan: UserPlan;
@@ -29,11 +30,27 @@ export interface UserPlanInfo {
   maxInstructions: number;
 }
 
+export const PLAN_LIMITS = {
+  free: {
+    timeLimit: 300, // 5 minutes in seconds
+    hasLogAccess: false,
+    hasExternalData: false,
+  },
+  plus: {
+    timeLimit: 900, // 15 minutes in seconds
+    hasLogAccess: true,
+    hasExternalData: false,
+  },
+  premium: {
+    timeLimit: 1800, // 30 minutes in seconds
+    hasLogAccess: true,
+    hasExternalData: true,
+  },
+} as const;
+
 const STORAGE_KEYS = {
   INSTRUCTIONS: 'morning_assistant_instructions',
   CALL_LOGS: 'morning_assistant_call_logs',
-  OPENAI_API_KEY: 'morning_assistant_openai_key',
-  USER_PLAN: 'morning_assistant_user_plan'
   OPENAI_API_KEY: 'morning_assistant_openai_key',
   USER_PLAN: 'morning_assistant_user_plan'
 };
