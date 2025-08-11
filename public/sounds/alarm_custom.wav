@@ -1,0 +1,17 @@
+# Placeholder for alarm sound file
+# In production, replace this with an actual 30-second WAV audio file
+# The file should be a pleasant morning alarm sound
+# Format: WAV, 44.1kHz, 16-bit, stereo
+# Duration: 30 seconds
+# 
+# You can generate or download a suitable alarm sound from:
+# - freesound.org (Creative Commons licensed sounds)
+# - zapsplat.com (Free with account)
+# - Use an audio editor like Audacity to create a custom sound
+#
+# Example characteristics for a good morning alarm:
+# - Gentle fade-in (0-3 seconds)
+# - Pleasant melody or nature sounds
+# - Gradually increasing volume
+# - Not too harsh or jarring
+# - Loops smoothly if needed

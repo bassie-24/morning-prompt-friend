@@ -76,6 +76,22 @@ const Index = () => {
     const savedKey = storageService.getOpenAIKey();
     if (savedKey) setApiKey(savedKey);
     
+    // アラームトリガーイベントのリスナー
+    const handleAlarmTrigger = (event: CustomEvent) => {
+      console.log('⏰ アラームがトリガーされました:', event.detail);
+      if (event.detail?.autoStart && savedKey) {
+        // 自動的に通話を開始
+        setTimeout(() => {
+          if (!isCallActiveRef.current) {
+            console.log('⏰ アラームから自動通話開始');
+            startCall();
+          }
+        }, 1000);
+      }
+    };
+    
+    window.addEventListener('alarmTriggered', handleAlarmTrigger as EventListener);
+    
     let savedInstructions = storageService.getInstructions();
     
     // 指示が0件の場合、デフォルト指示を自動追加
@@ -115,6 +131,7 @@ const Index = () => {
       if (timeIntervalRef.current) {
         clearInterval(timeIntervalRef.current);
       }
+      window.removeEventListener('alarmTriggered', handleAlarmTrigger as EventListener);
     };
   }, []);
 

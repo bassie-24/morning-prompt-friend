@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, X, Crown, Zap, Check } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, X, Crown, Zap, Check, Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { storageService, UserInstruction } from '@/utils/storage';
 import { usePlan } from '@/contexts/PlanContext';
@@ -161,6 +161,26 @@ const Settings = () => {
             </div>
           </CardContent>
                 </Card>
+
+        {/* Alarm Settings Link */}
+        <Link to="/alarm">
+          <Card className="fade-in hover:bg-accent/50 transition-colors cursor-pointer">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Bell className="w-5 h-5 text-primary" />
+                  <div>
+                    <CardTitle>アラーム設定</CardTitle>
+                    <CardDescription>
+                      指定時刻にAIアシスタントを自動起動
+                    </CardDescription>
+                  </div>
+                </div>
+                <ArrowLeft className="w-5 h-5 rotate-180 text-muted-foreground" />
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
 
         {/* Plan Management */}
         <Card className="fade-in">

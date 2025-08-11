@@ -6,10 +6,17 @@ export interface AlarmOptions {
   id: number;
   title: string;
   body: string;
-  scheduledTime: Date;
-  soundName?: string;
+  at?: Date;
+  scheduledTime?: Date; // 後方互換性のため
+  sound?: string;
+  soundName?: string; // 後方互換性のため
   enableVibration?: boolean;
   persistent?: boolean;
+  repeats?: boolean;
+  every?: 'day' | 'week' | 'month' | 'year';
+  count?: number;
+  actionTypeId?: string;
+  extra?: any;
 }
 
 export interface NotificationPermissionResult {
@@ -112,38 +119,52 @@ export class NotificationService {
 
     try {
       const platform = getPlatformInfo();
+      const scheduleTime = options.at || options.scheduledTime;
+      
+      if (!scheduleTime) {
+        platformLog('No schedule time provided');
+        return false;
+      }
       
       if (platform.isNative) {
         // Capacitor環境でのローカル通知
+        const notificationOptions: any = {
+          id: options.id,
+          title: options.title,
+          body: options.body,
+          schedule: { at: scheduleTime },
+          sound: options.sound || options.soundName || 'default',
+          actionTypeId: options.actionTypeId || 'ALARM_ACTION',
+          attachments: undefined,
+          extra: options.extra || {
+            type: 'alarm',
+            persistent: options.persistent || false
+          }
+        };
+
+        // 繰り返し設定
+        if (options.repeats && options.every) {
+          notificationOptions.schedule.every = options.every;
+          if (options.count) {
+            notificationOptions.schedule.count = options.count;
+          }
+        }
+
         await LocalNotifications.schedule({
-          notifications: [
-            {
-              id: options.id,
-              title: options.title,
-              body: options.body,
-              schedule: { at: options.scheduledTime },
-              sound: options.soundName || 'default',
-              actionTypeId: 'ALARM_ACTION',
-              attachments: undefined,
-              extra: {
-                type: 'alarm',
-                persistent: options.persistent || false
-              }
-            }
-          ]
+          notifications: [notificationOptions]
         });
 
-        platformLog(`Alarm scheduled for ${options.scheduledTime.toLocaleString()}`);
+        platformLog(`Alarm scheduled for ${scheduleTime.toLocaleString()}`);
       } else {
         // Web/PWA環境での通知（実行時のみ）
-        const timeUntilAlarm = options.scheduledTime.getTime() - Date.now();
+        const timeUntilAlarm = scheduleTime.getTime() - Date.now();
         
         if (timeUntilAlarm > 0) {
           setTimeout(() => {
             this.showWebNotification(options);
           }, timeUntilAlarm);
           
-          platformLog(`Web alarm scheduled for ${options.scheduledTime.toLocaleString()}`);
+          platformLog(`Web alarm scheduled for ${scheduleTime.toLocaleString()}`);
         } else {
           // 即座に通知
           await this.showWebNotification(options);
@@ -210,11 +231,20 @@ export class NotificationService {
         window.focus();
         notification.close();
         platformLog('Alarm notification clicked');
+        
+        // アラームのextraデータに基づいて処理
+        if (options.extra?.autoStart) {
+          // 自動的に通話を開始する処理をトリガー
+          window.dispatchEvent(new CustomEvent('alarmTriggered', { 
+            detail: { alarmId: options.extra.alarmId, autoStart: true }
+          }));
+        }
       };
 
       // 自動音声再生（可能な場合）
-      if (options.soundName) {
-        this.playAlarmSound(options.soundName);
+      const soundFile = options.sound || options.soundName;
+      if (soundFile) {
+        this.playAlarmSound(soundFile);
       }
 
     } catch (error) {
@@ -227,9 +257,31 @@ export class NotificationService {
    */
   private async playAlarmSound(soundName: string): Promise<void> {
     try {
-      const audio = new Audio(`/sounds/${soundName}`);
+      // カスタムサウンドファイルのパスを構築
+      let soundPath = '';
+      if (soundName === 'default') {
+        soundPath = '/sounds/default-alarm.mp3';
+      } else if (soundName === 'alarm_custom.wav' || soundName === 'custom') {
+        soundPath = '/sounds/alarm_custom.wav';
+      } else if (soundName.includes('/')) {
+        soundPath = soundName; // フルパスが指定されている場合
+      } else {
+        soundPath = `/sounds/${soundName}`;
+      }
+      
+      const audio = new Audio(soundPath);
       audio.volume = 0.8;
       audio.loop = false;
+      
+      // 30秒のカスタムアラーム音の場合はループ設定
+      if (soundName.includes('custom')) {
+        audio.loop = true;
+        // 30秒後に停止
+        setTimeout(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }, 30000);
+      }
       
       // ユーザーインタラクション後の再生を試行
       const playPromise = audio.play();

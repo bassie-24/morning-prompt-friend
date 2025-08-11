@@ -13,6 +13,7 @@ import NotificationService from "@/services/NotificationService";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
 import CallLog from "./pages/CallLog";
+import Alarm from "./pages/Alarm";
 import NotFound from "./pages/NotFound";
 import { registerSW } from 'virtual:pwa-register';
 
@@ -71,12 +72,13 @@ const App = () => {
           <Sonner />
           <OfflineIndicator />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/logs" element={<CallLog />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                    <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/logs" element={<CallLog />} />
+          <Route path="/alarm" element={<Alarm />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
           </BrowserRouter>
           <PWAInstallPrompt />
         </TooltipProvider>
