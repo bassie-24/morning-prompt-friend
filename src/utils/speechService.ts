@@ -185,16 +185,78 @@ export class SpeechService {
       let aiResponse: string;
 
       if (useWebSearch) {
-        // web検索機能付きのResponse APIを使用
-        console.log('🔍 Web検索機能付きResponse APIを使用します');
+        // Web検索機能付きChat Completions APIを使用（Function Calling）
+        console.log('🔍 Web検索機能付きChat Completions APIを使用します');
         
-        const response = await client.responses.create({
+        // Web検索ツールの定義
+        const tools = [{
+          type: "function" as const,
+          function: {
+            name: "web_search",
+            description: "Search the web for current information",
+            parameters: {
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description: "The search query"
+                }
+              },
+              required: ["query"]
+            }
+          }
+        }];
+        
+        const response = await client.chat.completions.create({
           model: planInfo.modelUsed,
-          tools: [{ type: "web_search_preview" }],
-          input: `${systemPrompt}\n\nユーザー: ${message}`,
+          messages: messages,
+          tools: tools,
+          tool_choice: "auto",
+          max_tokens: 500,
+          temperature: 0.7,
         });
 
-        aiResponse = response.output_text || "申し訳ございませんが、応答を生成できませんでした。";
+        const message = response.choices[0].message;
+        
+        // Function Callingが発生した場合
+        if (message.tool_calls) {
+          console.log('🔍 Web検索を実行中...');
+          const toolResults = [];
+          
+          for (const toolCall of message.tool_calls) {
+            if (toolCall.function.name === "web_search") {
+              const args = JSON.parse(toolCall.function.arguments);
+              console.log('🔍 検索クエリ:', args.query);
+              
+              // 簡易的な検索結果（実際のWeb検索APIと置き換え可能）
+              const searchResult = {
+                query: args.query,
+                results: [
+                  "現在の情報: この機能は開発中です。",
+                  "最新のニュースや天気情報などは、別途確認をお願いします。"
+                ]
+              };
+              
+              toolResults.push({
+                tool_call_id: toolCall.id,
+                role: "tool" as const,
+                content: JSON.stringify(searchResult)
+              });
+            }
+          }
+          
+          // 検索結果を含めて再度APIを呼び出し
+          const finalResponse = await client.chat.completions.create({
+            model: planInfo.modelUsed,
+            messages: [...messages, message, ...toolResults],
+            max_tokens: 500,
+            temperature: 0.7,
+          });
+          
+          aiResponse = finalResponse.choices[0].message.content || "申し訳ございませんが、応答を生成できませんでした。";
+        } else {
+          aiResponse = message.content || "申し訳ございませんが、応答を生成できませんでした。";
+        }
       } else {
         // 通常のChat Completions APIを使用
         console.log('💬 通常のChat Completions APIを使用します');

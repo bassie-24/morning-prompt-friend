@@ -250,9 +250,17 @@ const Index = () => {
     setCurrentMessage('');
     
     // 通話ログを保存
+    console.log('📝 通話ログ保存処理を開始');
+    console.log('📝 callStartTime:', callStartTime);
+    console.log('📝 speechServiceRef.current:', speechServiceRef.current);
+    
     if (callStartTime && speechServiceRef.current) {
       const duration = Math.floor((Date.now() - callStartTime.getTime()) / 1000);
       const conversation = speechServiceRef.current.getConversationHistory();
+      
+      console.log('📝 duration:', duration);
+      console.log('📝 conversation length:', conversation.length);
+      console.log('📝 active instructions:', instructions.filter(inst => inst.isActive).length);
       
       storageService.saveCallLog({
         date: callStartTime.toISOString(),
@@ -261,9 +269,24 @@ const Index = () => {
         conversation
       });
       
+      console.log('✅ 通話ログを保存しました');
+      
+      // 保存されたログを確認
+      const savedLogs = storageService.getCallLogs();
+      console.log('📝 保存されたログ数:', savedLogs.length);
+      
       toast({
         title: "通話が終了しました",
-        description: "通話ログが保存されました。"
+        description: `通話ログが保存されました。(${duration}秒, ${conversation.length}メッセージ)`
+      });
+    } else {
+      console.log('❌ 通話ログ保存条件を満たしていません');
+      console.log('❌ callStartTime:', callStartTime);
+      console.log('❌ speechServiceRef.current:', speechServiceRef.current);
+      
+      toast({
+        title: "通話が終了しました",
+        description: "通話ログは保存されませんでした。"
       });
     }
   };

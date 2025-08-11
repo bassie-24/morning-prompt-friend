@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, X, Crown, Zap, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { storageService, UserInstruction } from '@/utils/storage';
+import { usePlan } from '@/contexts/PlanContext';
 import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
@@ -28,6 +30,7 @@ const Settings = () => {
   });
   
   const { toast } = useToast();
+  const { userPlan, updatePlan, planLimits } = usePlan();
 
   useEffect(() => {
     // 初期データ読み込み
@@ -157,8 +160,106 @@ const Settings = () => {
               </div>
             </div>
           </CardContent>
-        </Card>
+                </Card>
 
+        {/* Plan Management */}
+        <Card className="fade-in">
+          <CardHeader>
+            <CardTitle>プラン設定</CardTitle>
+            <CardDescription>
+              ご利用プランを選択してください
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <RadioGroup value={userPlan} onValueChange={(value) => {
+              updatePlan(value as 'free' | 'premium');
+              toast({
+                title: "プランを変更しました",
+                description: `${value === 'premium' ? 'プレミアム' : '無料'}プランに変更されました。`
+              });
+            }}>
+              {/* 無料プラン */}
+              <div className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+                <div className="flex items-start space-x-3">
+                  <RadioGroupItem value="free" id="free-plan" />
+                  <div className="flex-1">
+                    <Label htmlFor="free-plan" className="cursor-pointer">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg font-semibold">無料プラン</span>
+                        {userPlan === 'free' && (
+                          <Badge variant="default">現在のプラン</Badge>
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span>5分間の通話時間</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span>基本的な音声アシスタント機能</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <X className="w-4 h-4 text-red-500" />
+                          <span>通話ログ閲覧不可</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <X className="w-4 h-4 text-red-500" />
+                          <span>Web検索機能なし</span>
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* プレミアムプラン */}
+              <div className="border rounded-lg p-4 hover:bg-accent/50 transition-colors border-primary">
+                <div className="flex items-start space-x-3">
+                  <RadioGroupItem value="premium" id="premium-plan" />
+                  <div className="flex-1">
+                    <Label htmlFor="premium-plan" className="cursor-pointer">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Crown className="w-5 h-5 text-yellow-500" />
+                        <span className="text-lg font-semibold">プレミアムプラン</span>
+                        {userPlan === 'premium' && (
+                          <Badge variant="default">現在のプラン</Badge>
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span>30分間の通話時間</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span>通話ログ完全閲覧可能</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span>Web検索機能（最新情報取得）</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-yellow-500" />
+                          <span>優先サポート</span>
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            </RadioGroup>
+
+            <div className="pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                <p>現在の制限時間: <span className="font-semibold">{planLimits.timeLimit / 60}分</span></p>
+                <p>ログアクセス: <span className="font-semibold">{planLimits.hasLogAccess ? '可能' : '不可'}</span></p>
+                <p>Web検索: <span className="font-semibold">{planLimits.hasExternalData ? '利用可能' : '利用不可'}</span></p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
         {/* Instructions Management */}
         <Card className="fade-in">
           <CardHeader>
