@@ -483,3 +483,22 @@ startup.end();
 ```
 
 この開発フローにより、**初回構築後は非常に効率的な継続開発**が可能となり、ユーザーの要望に迅速に対応できます。 
+
+## 補足
+
+## 次回作業時の手順
+
+```bash
+# 1. 最新コード取得
+git pull origin mobile-app
+
+# 2. 依存関係更新
+npm install
+
+# 3. ビルド・同期
+npm run build
+npx cap sync ios
+
+# 4. Xcode起動・実機テスト
+npx cap open ios
+```
