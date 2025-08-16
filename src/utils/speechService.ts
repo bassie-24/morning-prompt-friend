@@ -1,6 +1,7 @@
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions.mjs';
-import { storageService, UserInstruction } from './storage';
+import { storageService, UserInstruction, UserPlanInfo } from './storage';
 import OpenAI from "openai";
+import { webSearchService } from '@/services/WebSearchService';
 
 // Web Speech API の型宣言
 declare global {
@@ -228,13 +229,15 @@ export class SpeechService {
               const args = JSON.parse(toolCall.function.arguments);
               console.log('🔍 検索クエリ:', args.query);
               
-              // 簡易的な検索結果（実際のWeb検索APIと置き換え可能）
+              // WebSearchServiceを使用して実際の検索を実行
+              const searchResponse = await webSearchService.search(args.query);
+              const formattedResults = webSearchService.formatResults(searchResponse);
+              
               const searchResult = {
                 query: args.query,
-                results: [
-                  "現在の情報: この機能は開発中です。",
-                  "最新のニュースや天気情報などは、別途確認をお願いします。"
-                ]
+                results: formattedResults,
+                timestamp: searchResponse.timestamp,
+                provider: localStorage.getItem('web_search_provider') || 'mock'
               };
               
               toolResults.push({

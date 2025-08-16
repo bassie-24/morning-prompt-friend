@@ -7,11 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, X, Crown, Zap, Check, Bell } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, X, Crown, Zap, Check, Bell, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { storageService, UserInstruction } from '@/utils/storage';
 import { usePlan } from '@/contexts/PlanContext';
 import { useToast } from '@/hooks/use-toast';
+import { webSearchService } from '@/services/WebSearchService';
 
 const Settings = () => {
   const [apiKey, setApiKey] = useState('');
@@ -28,6 +29,8 @@ const Settings = () => {
     content: '',
     useWebSearch: false
   });
+  const [webSearchApiKey, setWebSearchApiKey] = useState('');
+  const [webSearchProvider, setWebSearchProvider] = useState<'serper' | 'bing' | 'google' | 'mock'>('mock');
   
   const { toast } = useToast();
   const { userPlan, updatePlan, planLimits } = usePlan();
@@ -39,6 +42,13 @@ const Settings = () => {
     
     const savedInstructions = storageService.getInstructions();
     setInstructions(savedInstructions);
+    
+    // Web検索設定の読み込み
+    const savedWebSearchKey = localStorage.getItem('web_search_api_key');
+    if (savedWebSearchKey) setWebSearchApiKey(savedWebSearchKey);
+    
+    const savedProvider = localStorage.getItem('web_search_provider');
+    if (savedProvider) setWebSearchProvider(savedProvider as any);
   }, []);
 
   const saveApiKey = () => {
@@ -47,6 +57,24 @@ const Settings = () => {
       toast({
         title: "APIキーを保存しました",
         description: "OpenAI APIキーが正常に保存されました。"
+      });
+    }
+  };
+
+  const saveWebSearchApiKey = () => {
+    if (webSearchApiKey.trim() || webSearchProvider === 'mock') {
+      webSearchService.setApiKey(webSearchApiKey.trim(), webSearchProvider);
+      toast({
+        title: "Web検索設定を保存しました",
+        description: webSearchProvider === 'mock' ? 
+          "モック検索モードで動作します。" : 
+          `${webSearchProvider.toUpperCase()} APIが設定されました。`
+      });
+    } else {
+      toast({
+        title: "エラー",
+        description: "APIキーを入力するか、モックモードを選択してください。",
+        variant: "destructive"
       });
     }
   };
@@ -181,6 +209,105 @@ const Settings = () => {
             </CardHeader>
           </Card>
         </Link>
+
+        {/* Web Search API Settings */}
+        {planLimits.hasExternalData && (
+          <Card className="fade-in">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Search className="w-5 h-5 text-primary" />
+                <CardTitle>Web検索API設定</CardTitle>
+              </div>
+              <CardDescription>
+                リアルタイム情報を取得するための検索API設定
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="search-provider">検索プロバイダー</Label>
+                <select
+                  id="search-provider"
+                  value={webSearchProvider}
+                  onChange={(e) => setWebSearchProvider(e.target.value as any)}
+                  className="w-full mt-2 px-3 py-2 border rounded-md"
+                >
+                  <option value="mock">モック（開発用）</option>
+                  <option value="serper">Serper API</option>
+                  <option value="bing">Bing Search API</option>
+                  <option value="google">Google Custom Search</option>
+                </select>
+              </div>
+
+              {webSearchProvider !== 'mock' && (
+                <div>
+                  <Label htmlFor="search-api-key">
+                    {webSearchProvider === 'serper' && 'Serper API Key'}
+                    {webSearchProvider === 'bing' && 'Bing API Key'}
+                    {webSearchProvider === 'google' && 'Google API Key'}
+                  </Label>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      id="search-api-key"
+                      type="password"
+                      placeholder={
+                        webSearchProvider === 'serper' ? 'xxxxxxxxxxxx' :
+                        webSearchProvider === 'bing' ? 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' :
+                        'AIzaSyxxxxxxxxxxxxxxxxxx'
+                      }
+                      value={webSearchApiKey}
+                      onChange={(e) => setWebSearchApiKey(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button onClick={saveWebSearchApiKey}>保存</Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {webSearchProvider === 'serper' && (
+                      <>
+                        <a href="https://serper.dev" target="_blank" rel="noopener noreferrer" className="underline">
+                          Serper.dev
+                        </a>
+                        から無料APIキーを取得できます（月2,500回まで無料）
+                      </>
+                    )}
+                    {webSearchProvider === 'bing' && (
+                      <>
+                        <a href="https://azure.microsoft.com/ja-jp/services/cognitive-services/bing-web-search-api/" target="_blank" rel="noopener noreferrer" className="underline">
+                          Azure Bing Search
+                        </a>
+                        のAPIキーを入力してください
+                      </>
+                    )}
+                    {webSearchProvider === 'google' && (
+                      <>
+                        <a href="https://developers.google.com/custom-search/v1/overview" target="_blank" rel="noopener noreferrer" className="underline">
+                          Google Custom Search API
+                        </a>
+                        のAPIキーとSearch Engine IDが必要です
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {webSearchProvider === 'mock' && (
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-md">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    モックモードでは実際の検索は行われず、サンプルデータが返されます。
+                    本番環境では上記のAPIプロバイダーを設定してください。
+                  </p>
+                </div>
+              )}
+
+              <Button 
+                onClick={saveWebSearchApiKey}
+                className="w-full"
+                variant={webSearchProvider === 'mock' ? 'secondary' : 'default'}
+              >
+                {webSearchProvider === 'mock' ? 'モックモードで保存' : 'APIキーを保存'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Plan Management */}
         <Card className="fade-in">

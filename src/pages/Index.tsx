@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { storageService, UserInstruction } from '@/utils/storage';
+import WebSearchTest from '@/components/WebSearchTest';
 import { usePlan } from '@/contexts/PlanContext';
 import { SpeechService } from '@/utils/speechService';
 import { Mic, MicOff, Phone, PhoneOff, Settings, FileText, Clock } from 'lucide-react';
@@ -606,6 +607,7 @@ const Index = () => {
           </Card>
         )}
       </div>
+      <WebSearchTest />
     </div>
   );
 };
