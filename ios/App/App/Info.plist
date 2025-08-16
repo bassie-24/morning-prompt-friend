@@ -49,5 +49,7 @@
 	<string>朝のAIアシスタントは音声認識機能のためにマイクへのアクセスが必要です</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>朝のAIアシスタントは音声認識機能のためにSpeech Recognitionへのアクセスが必要です</string>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>朝のAIアシスタントは指定された時刻にアラームを鳴らして起動するためにAlarmKitを使用します</string>
 </dict>
 </plist>

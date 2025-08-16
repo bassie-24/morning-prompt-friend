@@ -9,6 +9,8 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { storageService } from '@/utils/storage';
 import NotificationService from '@/services/NotificationService';
+import ServiceFactory from '@/services/ServiceFactory';
+import AlarmKitService from '@/services/AlarmKitService';
 
 export interface AlarmSettings {
   id: string;
@@ -37,15 +39,44 @@ const Alarm = () => {
   });
   const [editAlarm, setEditAlarm] = useState<Partial<AlarmSettings>>({});
   const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
+  const [alarmService, setAlarmService] = useState<AlarmKitService | NotificationService | null>(null);
+  const [isAlarmKit, setIsAlarmKit] = useState<boolean>(false);
   
   const { toast } = useToast();
-  const notificationService = NotificationService.getInstance();
 
   useEffect(() => {
-    // ローカルストレージからアラーム設定を読み込み
+    // アラームサービスの初期化とアラーム設定の読み込み
+    initializeAlarmService();
     loadAlarms();
-    checkNotificationPermission();
   }, []);
+
+  const initializeAlarmService = async () => {
+    try {
+      const service = await ServiceFactory.createAlarmService();
+      setAlarmService(service);
+      
+      if (service instanceof AlarmKitService) {
+        setIsAlarmKit(true);
+        setNotificationPermission(service.isServiceAuthorized());
+        toast({
+          title: 'AlarmKit利用可能',
+          description: 'より信頼性の高いアラーム機能を使用します',
+        });
+      } else {
+        setIsAlarmKit(false);
+        const result = await service.requestPermissions();
+        setNotificationPermission(result.granted);
+      }
+    } catch (error) {
+      console.error('Failed to initialize alarm service:', error);
+      // フォールバック: NotificationService
+      const fallbackService = NotificationService.getInstance();
+      setAlarmService(fallbackService);
+      setIsAlarmKit(false);
+      const result = await fallbackService.requestPermissions();
+      setNotificationPermission(result.granted);
+    }
+  };
 
   const loadAlarms = () => {
     const savedAlarms = localStorage.getItem('morning_assistant_alarms');
@@ -60,8 +91,18 @@ const Alarm = () => {
   };
 
   const checkNotificationPermission = async () => {
-    const result = await notificationService.requestPermissions();
-    setNotificationPermission(result.granted);
+    if (!alarmService) return;
+    
+    if (isAlarmKit) {
+      // AlarmKitの場合
+      const alarmKitService = alarmService as AlarmKitService;
+      setNotificationPermission(alarmKitService.isServiceAuthorized());
+    } else {
+      // NotificationServiceの場合
+      const notificationService = alarmService as NotificationService;
+      const result = await notificationService.requestPermissions();
+      setNotificationPermission(result.granted);
+    }
   };
 
   const addAlarm = async () => {
@@ -88,7 +129,7 @@ const Alarm = () => {
     const updatedAlarms = [...alarms, alarm];
     saveAlarms(updatedAlarms);
     
-    // 通知をスケジュール
+    // アラームをスケジュール
     if (alarm.enabled) {
       await scheduleAlarmNotification(alarm);
     }
@@ -165,57 +206,136 @@ const Alarm = () => {
   };
 
   const scheduleAlarmNotification = async (alarm: AlarmSettings) => {
-    const [hours, minutes] = alarm.time.split(':').map(Number);
-    const now = new Date();
-    
-    // 今日のアラーム時刻を計算
-    const alarmTime = new Date();
-    alarmTime.setHours(hours, minutes, 0, 0);
-    
-    // 過去の時刻なら明日に設定
-    if (alarmTime <= now) {
-      alarmTime.setDate(alarmTime.getDate() + 1);
+    if (!alarmService) {
+      console.error('Alarm service not initialized');
+      return false;
     }
 
-    // 曜日の確認
-    const dayOfWeek = alarmTime.getDay();
-    if (alarm.days.length > 0 && !alarm.days.includes(dayOfWeek)) {
-      // 次の有効な曜日を探す
-      for (let i = 1; i <= 7; i++) {
-        alarmTime.setDate(alarmTime.getDate() + 1);
-        if (alarm.days.includes(alarmTime.getDay())) {
-          break;
+    try {
+      if (isAlarmKit) {
+        // AlarmKitを使用
+        const alarmKitService = alarmService as AlarmKitService;
+        
+        if (alarm.days.length > 0) {
+          // 繰り返しアラーム
+          const result = await alarmKitService.scheduleAlarm({
+            id: alarm.id,
+            title: '朝のAIアシスタント',
+            body: alarm.label,
+            time: alarm.time,
+            weekdays: alarm.days,
+            enableSnooze: alarm.snooze
+          });
+          
+          console.log('📅 AlarmKit繰り返しアラームをスケジュール:', {
+            id: alarm.id,
+            time: alarm.time,
+            weekdays: alarm.days,
+            result
+          });
+          
+          return result;
+        } else {
+          // 1回のみのアラーム
+          const [hours, minutes] = alarm.time.split(':').map(Number);
+          const alarmTime = new Date();
+          alarmTime.setHours(hours, minutes, 0, 0);
+          
+          // 過去の時刻なら明日に設定
+          if (alarmTime <= new Date()) {
+            alarmTime.setDate(alarmTime.getDate() + 1);
+          }
+          
+          const result = await alarmKitService.scheduleFixedAlarm({
+            id: alarm.id,
+            title: '朝のAIアシスタント',
+            body: alarm.label,
+            date: alarmTime,
+            enableSnooze: alarm.snooze
+          });
+          
+          console.log('📅 AlarmKit固定アラームをスケジュール:', {
+            id: alarm.id,
+            date: alarmTime.toLocaleString(),
+            result
+          });
+          
+          return result;
         }
+      } else {
+        // 従来のNotificationServiceを使用
+        const notificationService = alarmService as NotificationService;
+        const [hours, minutes] = alarm.time.split(':').map(Number);
+        const now = new Date();
+        
+        // 今日のアラーム時刻を計算
+        const alarmTime = new Date();
+        alarmTime.setHours(hours, minutes, 0, 0);
+        
+        // 過去の時刻なら明日に設定
+        if (alarmTime <= now) {
+          alarmTime.setDate(alarmTime.getDate() + 1);
+        }
+
+        // 曜日の確認
+        const dayOfWeek = alarmTime.getDay();
+        if (alarm.days.length > 0 && !alarm.days.includes(dayOfWeek)) {
+          // 次の有効な曜日を探す
+          for (let i = 1; i <= 7; i++) {
+            alarmTime.setDate(alarmTime.getDate() + 1);
+            if (alarm.days.includes(alarmTime.getDay())) {
+              break;
+            }
+          }
+        }
+
+        const result = await notificationService.scheduleAlarm({
+          id: parseInt(alarm.id),
+          title: '朝のAIアシスタント',
+          body: alarm.label,
+          at: alarmTime,
+          sound: alarm.sound === 'custom' ? 'alarm_custom.wav' : 'default',
+          repeats: alarm.days.length > 0,
+          actionTypeId: 'start_call',
+          extra: {
+            alarmId: alarm.id,
+            autoStart: true,
+          }
+        });
+
+        console.log('📅 NotificationServiceアラームをスケジュール:', {
+          id: alarm.id,
+          time: alarmTime.toLocaleString(),
+          result
+        });
+
+        return result;
       }
+    } catch (error) {
+      console.error('Failed to schedule alarm:', error);
+      return false;
     }
-
-    const result = await notificationService.scheduleAlarm({
-      id: parseInt(alarm.id),
-      title: '朝のAIアシスタント',
-      body: alarm.label,
-      at: alarmTime,
-      sound: alarm.sound === 'custom' ? 'alarm_custom.wav' : 'default',
-      repeats: alarm.days.length > 0,
-      actionTypeId: 'start_call',
-      extra: {
-        alarmId: alarm.id,
-        autoStart: true,
-      }
-    });
-
-    console.log('📅 アラームをスケジュール:', {
-      id: alarm.id,
-      time: alarmTime.toLocaleString(),
-      result
-    });
-
-    return result;
   };
 
   const cancelAlarmNotification = async (alarmId: string) => {
-    const result = await notificationService.cancelAlarm(parseInt(alarmId));
-    console.log('❌ アラームをキャンセル:', { alarmId, result });
-    return result;
+    if (!alarmService) return false;
+    
+    try {
+      if (isAlarmKit) {
+        const alarmKitService = alarmService as AlarmKitService;
+        const result = await alarmKitService.cancelAlarm(alarmId);
+        console.log('❌ AlarmKitアラームをキャンセル:', { alarmId, result });
+        return result;
+      } else {
+        const notificationService = alarmService as NotificationService;
+        const result = await notificationService.cancelAlarm(parseInt(alarmId));
+        console.log('❌ NotificationServiceアラームをキャンセル:', { alarmId, result });
+        return result;
+      }
+    } catch (error) {
+      console.error('Failed to cancel alarm:', error);
+      return false;
+    }
   };
 
   const formatDays = (days: number[]) => {
@@ -243,6 +363,29 @@ const Alarm = () => {
           </div>
         </div>
 
+        {/* アラームサービスの状態表示 */}
+        <Card className={`${isAlarmKit ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'}`}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Bell className={`w-5 h-5 ${isAlarmKit ? 'text-green-600' : 'text-blue-600'}`} />
+              <div className="flex-1">
+                <p className="text-sm font-medium">
+                  {isAlarmKit ? 'AlarmKit使用中' : 'ローカル通知使用中'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isAlarmKit 
+                    ? 'システムレベルのアラーム機能（フォーカス・サイレントモードを無視）'
+                    : '標準的な通知機能'
+                  }
+                </p>
+              </div>
+              <Badge variant={isAlarmKit ? 'default' : 'secondary'}>
+                {isAlarmKit ? '高機能' : '標準'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* 通知権限の確認 */}
         {!notificationPermission && (
           <Card className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
@@ -250,9 +393,11 @@ const Alarm = () => {
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-yellow-600" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium">通知権限が必要です</p>
+                  <p className="text-sm font-medium">
+                    {isAlarmKit ? 'AlarmKit権限が必要です' : '通知権限が必要です'}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    アラーム機能を利用するには通知権限を許可してください。
+                    アラーム機能を利用するには権限を許可してください。
                   </p>
                 </div>
                 <Button size="sm" onClick={checkNotificationPermission}>
@@ -516,11 +661,12 @@ const Alarm = () => {
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• 指定時刻になると通知が表示され、タップすると朝のAIアシスタントが起動します</li>
+              <li>• 指定時刻になると{isAlarmKit ? 'システムアラーム' : '通知'}が表示され、タップすると朝のAIアシスタントが起動します</li>
               <li>• 曜日ごとに繰り返し設定が可能です</li>
               <li>• スヌーズ機能を有効にすると、指定時間後に再通知されます</li>
+              {isAlarmKit && <li>• AlarmKit使用時はフォーカスモードやサイレントモードでもアラームが鳴ります</li>}
               <li>• アプリがバックグラウンドでも動作します（ネイティブアプリ版）</li>
-              <li>• PWA版では通知権限の許可が必要です</li>
+              {!isAlarmKit && <li>• PWA版では通知権限の許可が必要です</li>}
             </ul>
           </CardContent>
         </Card>

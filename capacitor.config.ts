@@ -30,6 +30,9 @@ const config: CapacitorConfig = {
       iconColor: "#488AFF",
       sound: "beep.wav",
     },
+    AlarmKitPlugin: {
+      // AlarmKit用の設定（必要に応じて追加）
+    },
   },
   ios: {
     scheme: 'Morning AI Assistant',
