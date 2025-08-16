@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
+import { Device } from '@capacitor/device';
 
 export interface PlatformInfo {
   isWeb: boolean;
@@ -8,6 +9,7 @@ export interface PlatformInfo {
   isIOS: boolean;
   isAndroid: boolean;
   isPWA: boolean;
+  osVersion?: string;
 }
 
 /**
@@ -29,6 +31,34 @@ export const getPlatformInfo = (): PlatformInfo => {
     isIOS: platform === 'ios',
     isAndroid: platform === 'android',
     isPWA
+  };
+};
+
+/**
+ * 詳細なプラットフォーム情報を非同期で取得（OSバージョン含む）
+ */
+export const getPlatformInfoAsync = async (): Promise<PlatformInfo & { osVersion: string }> => {
+  const basicInfo = getPlatformInfo();
+  
+  if (basicInfo.isNative) {
+    try {
+      const deviceInfo = await Device.getInfo();
+      return {
+        ...basicInfo,
+        osVersion: deviceInfo.osVersion || '0'
+      };
+    } catch (error) {
+      console.warn('Failed to get device info:', error);
+      return {
+        ...basicInfo,
+        osVersion: '0'
+      };
+    }
+  }
+  
+  return {
+    ...basicInfo,
+    osVersion: '0'
   };
 };
 

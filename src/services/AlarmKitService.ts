@@ -1,5 +1,5 @@
 import { registerPlugin } from '@capacitor/core';
-import { getPlatformInfo, platformLog } from '@/utils/platformUtils';
+import { getPlatformInfo, getPlatformInfoAsync, platformLog } from '@/utils/platformUtils';
 
 export interface AlarmKitPlugin {
   requestAuthorization(): Promise<{ authorized: boolean }>;
@@ -237,13 +237,14 @@ export class AlarmKitService {
    */
   private async getIOSVersion(): Promise<number> {
     try {
-      const platform = getPlatformInfo();
+      const platform = await getPlatformInfoAsync();
       if (platform.isIOS && platform.osVersion) {
         const version = parseFloat(platform.osVersion);
         return isNaN(version) ? 0 : version;
       }
       return 0;
-    } catch {
+    } catch (error) {
+      platformLog('Failed to get iOS version:', error);
       return 0;
     }
   }
