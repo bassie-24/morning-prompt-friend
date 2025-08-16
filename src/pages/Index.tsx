@@ -128,14 +128,14 @@ const Index = () => {
     
     setInstructions(savedInstructions);
     
-    // プラットフォーム初期化
-    initializePlatform().then(() => {
-      // プラットフォーム情報をログ出力
-      ServiceFactory.logPlatformInfo();
-      
-      // 適切なサービスを作成
-      speechServiceRef.current = ServiceFactory.createSpeechService();
-    });
+    // プラットフォーム情報をログ出力
+    ServiceFactory.logPlatformInfo();
+    
+    // 適切なサービスを即座に作成（同期）
+    speechServiceRef.current = ServiceFactory.createSpeechService();
+    
+    // プラットフォーム初期化は別途実行（非同期でも問題なし）
+    initializePlatform();
 
     // クリーンアップ: コンポーネントアンマウント時にタイマーをクリア
     return () => {

@@ -294,7 +294,30 @@ export class CapacitorSpeechService {
       });
 
       // 音声認識開始
-      this.startRecognition().catch(reject);
+      try {
+        if (this.isListening) {
+          platformLog('音声認識は既に実行中です');
+          return;
+        }
+
+        // 設定の適用
+        this.recognition.lang = 'ja-JP';
+        this.recognition.continuous = false;
+        this.recognition.interimResults = true;
+        this.recognition.maxAlternatives = 1;
+
+        // イベントリスナーの設定
+        this.setupRecognitionListeners();
+
+        // 認識開始
+        this.recognition.start();
+        this.isListening = true;
+        
+        platformLog('音声認識を開始しました');
+      } catch (error) {
+        platformLog('音声認識の開始に失敗:', error);
+        reject(error);
+      }
     });
   }
 
