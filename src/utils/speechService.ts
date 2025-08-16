@@ -186,80 +186,21 @@ export class SpeechService {
       let aiResponse: string;
 
       if (useWebSearch) {
-        // Web検索機能付きChat Completions APIを使用（Function Calling）
-        console.log('🔍 Web検索機能付きChat Completions APIを使用します');
+        // Responses APIを使用してWeb検索機能を利用
+        console.log('🔍 Responses APIでWeb検索機能を使用します');
         
-        // Web検索ツールの定義
-        const tools = [{
-          type: "function" as const,
-          function: {
-            name: "web_search",
-            description: "Search the web for current information",
-            parameters: {
-              type: "object",
-              properties: {
-                query: {
-                  type: "string",
-                  description: "The search query"
-                }
-              },
-              required: ["query"]
-            }
-          }
-        }];
-        
-        const response = await client.chat.completions.create({
+        const response = await client.responses.create({
           model: planInfo.modelUsed,
-          messages: messages,
-          tools: tools,
-          tool_choice: "auto",
-          max_tokens: 500,
-          temperature: 0.7,
+          tools: [
+            { type: "web_search_preview" },
+          ],
+          input: messages.map(msg => `${msg.role}: ${msg.content}`).join('\n'),
         });
 
-        const message = response.choices[0].message;
+        console.log('🔄 Responses API レスポンス:', response);
         
-        // Function Callingが発生した場合
-        if (message.tool_calls) {
-          console.log('🔍 Web検索を実行中...');
-          const toolResults = [];
-          
-          for (const toolCall of message.tool_calls) {
-            if (toolCall.function.name === "web_search") {
-              const args = JSON.parse(toolCall.function.arguments);
-              console.log('🔍 検索クエリ:', args.query);
-              
-              // WebSearchServiceを使用して実際の検索を実行
-              const searchResponse = await webSearchService.search(args.query);
-              const formattedResults = webSearchService.formatResults(searchResponse);
-              
-              const searchResult = {
-                query: args.query,
-                results: formattedResults,
-                timestamp: searchResponse.timestamp,
-                provider: localStorage.getItem('web_search_provider') || 'mock'
-              };
-              
-              toolResults.push({
-                tool_call_id: toolCall.id,
-                role: "tool" as const,
-                content: JSON.stringify(searchResult)
-              });
-            }
-          }
-          
-          // 検索結果を含めて再度APIを呼び出し
-          const finalResponse = await client.chat.completions.create({
-            model: planInfo.modelUsed,
-            messages: [...messages, message, ...toolResults],
-            max_tokens: 500,
-            temperature: 0.7,
-          });
-          
-          aiResponse = finalResponse.choices[0].message.content || "申し訳ございませんが、応答を生成できませんでした。";
-        } else {
-          aiResponse = message.content || "申し訳ございませんが、応答を生成できませんでした。";
-        }
+        // レスポンスからテキストを取得
+        aiResponse = response.output_text || 'Responses APIから有効なレスポンスが取得できませんでした';
       } else {
         // 通常のChat Completions APIを使用
         console.log('💬 通常のChat Completions APIを使用します');

@@ -133,7 +133,7 @@ export const storageService = {
       return {
         plan: 'premium',
         planDisplayName: 'プレミアムプラン',
-        modelUsed: 'gpt-4.1',
+        modelUsed: 'gpt-4.1-mini',
         hasSearch: true,
         maxInstructions: 50
       };
@@ -141,7 +141,7 @@ export const storageService = {
       return {
         plan: 'free',
         planDisplayName: '無料プラン',
-        modelUsed: 'gpt-4o',
+        modelUsed: 'gpt-4o-mini',
         hasSearch: false,
         maxInstructions: 20
       };
