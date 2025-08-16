@@ -73,4 +73,19 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    exclude: ['@capacitor/device']
+  },
+  build: {
+    rollupOptions: {
+      // 動的インポートで使用されるCapacitorプラグインを外部化
+      external: (id) => {
+        // Capacitorプラグインを動的インポート時のみ外部化
+        if (id.includes('@capacitor/device')) {
+          return false; // バンドルに含める（動的インポートで使用）
+        }
+        return false;
+      }
+    }
+  }
 }));

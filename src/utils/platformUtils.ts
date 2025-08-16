@@ -41,19 +41,17 @@ export const getPlatformInfoAsync = async (): Promise<PlatformInfo & { osVersion
   
   if (basicInfo.isNative) {
     try {
-      // 動的インポートでCapacitor Deviceプラグインを読み込み
-      const { Device } = await import('@capacitor/device');
-      const deviceInfo = await Device.getInfo();
+      // DeviceInfoServiceを動的インポート
+      const { default: DeviceInfoService } = await import('./deviceInfo');
+      const deviceService = DeviceInfoService.getInstance();
+      const osVersion = await deviceService.getIOSVersion();
+      
       return {
         ...basicInfo,
-        osVersion: deviceInfo.osVersion || '0'
+        osVersion
       };
     } catch (error) {
       console.warn('Failed to get device info:', error);
-      return {
-        ...basicInfo,
-        osVersion: '0'
-      };
     }
   }
   

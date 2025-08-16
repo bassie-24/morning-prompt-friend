@@ -14,7 +14,6 @@
     "@capacitor/app": "^7.0.1",
     "@capacitor/cli": "^7.4.2",
     "@capacitor/core": "^7.4.2",
-    "@capacitor/device": "^7.0.2",
     "@capacitor/haptics": "^7.0.1",
     "@capacitor/ios": "^7.4.2",
     "@capacitor/local-notifications": "^7.0.1",
@@ -92,5 +91,8 @@
     "vite": "^5.4.1",
     "vite-plugin-pwa": "^1.0.2",
     "workbox-window": "^7.3.0"
+  },
+  "optionalDependencies": {
+    "@capacitor/device": "^7.0.2"
   }
 }
