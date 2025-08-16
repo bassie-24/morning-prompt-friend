@@ -1,7 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
-import { Device } from '@capacitor/device';
 
 export interface PlatformInfo {
   isWeb: boolean;
@@ -42,6 +41,8 @@ export const getPlatformInfoAsync = async (): Promise<PlatformInfo & { osVersion
   
   if (basicInfo.isNative) {
     try {
+      // 動的インポートでCapacitor Deviceプラグインを読み込み
+      const { Device } = await import('@capacitor/device');
       const deviceInfo = await Device.getInfo();
       return {
         ...basicInfo,
