@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+venv/
+
 # API Keys and Secrets
 openai-api-key.txt
 *.key
