@@ -9,6 +9,9 @@ import { storageService, UserInstruction } from '@/utils/storage';
 import WebSearchTest from '@/components/WebSearchTest';
 import { usePlan } from '@/contexts/PlanContext';
 import { SpeechService } from '@/utils/speechService';
+import { ServiceFactory } from '@/services/ServiceFactory';
+import { CapacitorSpeechService } from '@/services/CapacitorSpeechService';
+import { initializePlatform } from '@/utils/platformUtils';
 import { Mic, MicOff, Phone, PhoneOff, Settings, FileText, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -21,7 +24,7 @@ const Index = () => {
   const [currentMessage, setCurrentMessage] = useState('');
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
   const [remainingTime, setRemainingTime] = useState(0);
-  const speechServiceRef = useRef<SpeechService | null>(null);
+  const speechServiceRef = useRef<SpeechService | CapacitorSpeechService | null>(null);
   const timeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // 最新の isCallActive 状態を useRef で管理（クロージャ問題を解決）
@@ -125,7 +128,14 @@ const Index = () => {
     
     setInstructions(savedInstructions);
     
-    speechServiceRef.current = new SpeechService();
+    // プラットフォーム初期化
+    initializePlatform().then(() => {
+      // プラットフォーム情報をログ出力
+      ServiceFactory.logPlatformInfo();
+      
+      // 適切なサービスを作成
+      speechServiceRef.current = ServiceFactory.createSpeechService();
+    });
 
     // クリーンアップ: コンポーネントアンマウント時にタイマーをクリア
     return () => {
