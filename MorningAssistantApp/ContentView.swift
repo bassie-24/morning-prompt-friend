@@ -1,7 +1,6 @@
 import SwiftUI
 import AVFoundation
 import Speech
-import AlarmKit
 
 struct ContentView: View {
     @StateObject private var viewModel = MorningAssistantViewModel()
@@ -56,6 +55,15 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showAlarms) {
                 AlarmSettingsView()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AlarmTriggered"))) { notification in
+                if let userInfo = notification.userInfo,
+                   let autoStart = userInfo["autoStart"] as? Bool,
+                   autoStart && viewModel.hasApiKey && !viewModel.isCallActive {
+                    Task {
+                        await viewModel.startCall()
+                    }
+                }
             }
         }
     }
@@ -200,10 +208,11 @@ struct ContentView: View {
                     .font(.headline)
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("• 設定ページでAIに指示してほしい内容を事前に登録してください")
+                    Text("• 設定画面でAIに指示してほしい内容を事前に登録してください")
                     Text("• 通話中はAIの指示に従って行動し、完了したら口頭で報告してください")
                     Text("• 音声認識がうまくいかない場合は、はっきりと話してください")
                     Text("• 通話ログは自動的に保存され、後で確認できます")
+                    Text("• アラームを設定すると指定時刻にアプリが自動起動します")
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)

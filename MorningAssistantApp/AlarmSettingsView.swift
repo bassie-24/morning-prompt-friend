@@ -1,5 +1,5 @@
 import SwiftUI
-import AlarmKit
+import UserNotifications
 
 struct AlarmSettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -31,11 +31,7 @@ struct AlarmSettingsView: View {
                         } header: {
                             Text("アラーム一覧")
                         } footer: {
-                            if viewModel.isAlarmKitAvailable {
-                                Text("AlarmKit使用中 - フォーカスモードやサイレントモードでもアラームが鳴ります")
-                            } else {
-                                Text("標準通知使用中 - アプリの通知許可が必要です")
-                            }
+                            Text("指定時刻になると通知が表示され、タップするとアプリが起動します")
                         }
                     }
                 }
@@ -58,26 +54,26 @@ struct AlarmSettingsView: View {
                 }
             }
             .sheet(isPresented: $showingAddAlarm) {
-                AlarmEditView(alarm: nil, isAlarmKitAvailable: viewModel.isAlarmKitAvailable) { newAlarm in
+                AlarmEditView(alarm: nil) { newAlarm in
                     Task {
                         await viewModel.addAlarm(newAlarm)
                     }
                 }
             }
             .sheet(item: $editingAlarm) { alarm in
-                AlarmEditView(alarm: alarm, isAlarmKitAvailable: viewModel.isAlarmKitAvailable) { updatedAlarm in
+                AlarmEditView(alarm: alarm) { updatedAlarm in
                     Task {
                         await viewModel.updateAlarm(updatedAlarm)
                     }
                 }
             }
-            .alert("アラーム権限が必要です", isPresented: $viewModel.showPermissionAlert) {
+            .alert("通知権限が必要です", isPresented: $viewModel.showPermissionAlert) {
                 Button("設定を開く") {
                     viewModel.openSettings()
                 }
                 Button("キャンセル", role: .cancel) {}
             } message: {
-                Text("アラーム機能を使用するには、設定からアラームの権限を許可してください。")
+                Text("アラーム機能を使用するには、設定から通知の権限を許可してください。")
             }
         }
         .onAppear {
@@ -146,7 +142,6 @@ struct AlarmRow: View {
 
 struct AlarmEditView: View {
     let alarm: AlarmConfiguration?
-    let isAlarmKitAvailable: Bool
     let onSave: (AlarmConfiguration) -> Void
     
     @Environment(\.dismiss) private var dismiss
@@ -155,9 +150,8 @@ struct AlarmEditView: View {
     @State private var selectedWeekdays: Set<Int>
     @State private var isEnabled: Bool
     
-    init(alarm: AlarmConfiguration?, isAlarmKitAvailable: Bool, onSave: @escaping (AlarmConfiguration) -> Void) {
+    init(alarm: AlarmConfiguration?, onSave: @escaping (AlarmConfiguration) -> Void) {
         self.alarm = alarm
-        self.isAlarmKitAvailable = isAlarmKitAvailable
         self.onSave = onSave
         
         _label = State(initialValue: alarm?.label ?? "朝の準備")
@@ -209,16 +203,14 @@ struct AlarmEditView: View {
                 Section {
                     VStack(alignment: .leading) {
                         HStack {
-                            Image(systemName: isAlarmKitAvailable ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                                .foregroundColor(isAlarmKitAvailable ? .green : .orange)
+                            Image(systemName: "bell.fill")
+                                .foregroundColor(.blue)
                             
-                            Text(isAlarmKitAvailable ? "AlarmKit利用可能" : "標準通知使用")
+                            Text("ローカル通知使用")
                                 .font(.headline)
                         }
                         
-                        Text(isAlarmKitAvailable ?
-                             "システムレベルのアラーム機能を使用します。フォーカスモードやサイレントモードでもアラームが鳴ります。" :
-                             "標準的な通知機能を使用します。アプリの通知許可が必要です。")
+                        Text("指定時刻に通知が表示され、タップするとアプリが起動します。")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -256,35 +248,25 @@ struct AlarmEditView: View {
 @MainActor
 class AlarmSettingsViewModel: ObservableObject {
     @Published var alarms: [AlarmConfiguration] = []
-    @Published var isAlarmKitAvailable = false
     @Published var showPermissionAlert = false
     
-    private let alarmManager = AlarmManager.shared
-    
     func initialize() async {
-        await checkAlarmKitAvailability()
+        await checkNotificationPermission()
         loadAlarms()
     }
     
-    private func checkAlarmKitAvailability() async {
-        // Check if AlarmKit is available (iOS 26.0+)
-        if #available(iOS 26.0, *) {
+    private func checkNotificationPermission() async {
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        
+        if settings.authorizationStatus == .notDetermined {
             do {
-                let authStatus = alarmManager.authorizationState
-                if authStatus == .authorized {
-                    isAlarmKitAvailable = true
-                } else if authStatus == .notDetermined {
-                    let newStatus = try await alarmManager.requestAuthorization()
-                    isAlarmKitAvailable = (newStatus == .authorized)
-                } else {
-                    showPermissionAlert = true
-                }
+                _ = try await center.requestAuthorization(options: [.alert, .sound, .badge])
             } catch {
-                print("AlarmKit authorization error: \(error)")
-                isAlarmKitAvailable = false
+                showPermissionAlert = true
             }
-        } else {
-            isAlarmKitAvailable = false
+        } else if settings.authorizationStatus == .denied {
+            showPermissionAlert = true
         }
     }
     
@@ -300,21 +282,21 @@ class AlarmSettingsViewModel: ObservableObject {
         saveAlarms()
         
         if alarm.isEnabled {
-            await scheduleAlarm(alarm)
+            await scheduleNotification(for: alarm)
         }
     }
     
     func updateAlarm(_ alarm: AlarmConfiguration) async {
         if let index = alarms.firstIndex(where: { $0.id == alarm.id }) {
-            // Cancel existing alarm
-            await cancelAlarm(alarms[index].id)
+            // Cancel existing notification
+            await cancelNotification(for: alarms[index].id)
             
             // Update and reschedule if enabled
             alarms[index] = alarm
             saveAlarms()
             
             if alarm.isEnabled {
-                await scheduleAlarm(alarm)
+                await scheduleNotification(for: alarm)
             }
         }
     }
@@ -326,9 +308,9 @@ class AlarmSettingsViewModel: ObservableObject {
             
             Task {
                 if alarms[index].isEnabled {
-                    await scheduleAlarm(alarms[index])
+                    await scheduleNotification(for: alarms[index])
                 } else {
-                    await cancelAlarm(id)
+                    await cancelNotification(for: id)
                 }
             }
         }
@@ -336,93 +318,74 @@ class AlarmSettingsViewModel: ObservableObject {
     
     func deleteAlarm(_ id: UUID) {
         Task {
-            await cancelAlarm(id)
+            await cancelNotification(for: id)
         }
         
         alarms.removeAll { $0.id == id }
         saveAlarms()
     }
     
-    private func scheduleAlarm(_ alarm: AlarmConfiguration) async {
-        if isAlarmKitAvailable {
-            await scheduleWithAlarmKit(alarm)
-        } else {
-            scheduleWithLocalNotification(alarm)
-        }
-    }
-    
-    @available(iOS 26.0, *)
-    private func scheduleWithAlarmKit(_ alarm: AlarmConfiguration) async {
-        let attributes = AlarmAttributes(
-            presentation: AlarmPresentation(
-                alert: AlarmPresentation.Alert(
-                    title: "朝のAIアシスタント",
-                    stopButton: .init(text: "停止", textColor: .white, systemImageName: "stop.circle")
-                )
-            ),
-            metadata: MorningAssistantMetadata(alarmId: alarm.id.uuidString),
-            tintColor: .blue
-        )
+    private func scheduleNotification(for alarm: AlarmConfiguration) async {
+        let center = UNUserNotificationCenter.current()
         
-        let schedule: Alarm.Schedule
+        // Create notification content
+        let content = UNMutableNotificationContent()
+        content.title = "朝のAIアシスタント"
+        content.body = alarm.label
+        content.sound = .default
+        content.userInfo = ["alarmId": alarm.id.uuidString, "autoStart": true]
+        
+        // Create date components from alarm time
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.hour, .minute], from: alarm.time)
+        
         if alarm.weekdays.isEmpty {
-            // One-time alarm
-            schedule = .fixed(alarm.time)
-        } else {
-            // Repeating alarm
-            let calendar = Calendar.current
-            let components = calendar.dateComponents([.hour, .minute], from: alarm.time)
-            let time = Alarm.Schedule.Relative.Time(
-                hour: components.hour ?? 7,
-                minute: components.minute ?? 0
-            )
+            // One-time notification
+            var triggerDate = calendar.dateComponents([.year, .month, .day], from: Date())
+            triggerDate.hour = components.hour
+            triggerDate.minute = components.minute
             
-            let weekdays: [Locale.Weekday] = alarm.weekdays.compactMap { weekdayIndex in
-                switch weekdayIndex {
-                case 0: return .sunday
-                case 1: return .monday
-                case 2: return .tuesday
-                case 3: return .wednesday
-                case 4: return .thursday
-                case 5: return .friday
-                case 6: return .saturday
-                default: return nil
-                }
+            // If time has passed today, schedule for tomorrow
+            if let scheduledDate = calendar.date(from: triggerDate),
+               scheduledDate <= Date() {
+                triggerDate = calendar.dateComponents([.year, .month, .day], from: Date().addingTimeInterval(86400))
+                triggerDate.hour = components.hour
+                triggerDate.minute = components.minute
             }
             
-            schedule = .relative(.init(
-                time: time,
-                repeats: .weekly(weekdays)
-            ))
-        }
-        
-        let configuration = AlarmManager.AlarmConfiguration(
-            schedule: schedule,
-            attributes: attributes,
-            stopIntent: StopAlarmIntent(alarmID: alarm.id.uuidString)
-        )
-        
-        do {
-            _ = try await alarmManager.schedule(id: alarm.id, configuration: configuration)
-            print("AlarmKit alarm scheduled successfully")
-        } catch {
-            print("Failed to schedule AlarmKit alarm: \(error)")
-        }
-    }
-    
-    private func scheduleWithLocalNotification(_ alarm: AlarmConfiguration) {
-        // Implement local notification scheduling
-        // This is a simplified version - you would implement full notification scheduling here
-        print("Scheduling local notification for alarm: \(alarm.label)")
-    }
-    
-    private func cancelAlarm(_ id: UUID) async {
-        if isAlarmKitAvailable {
-            try? alarmManager.cancel(id: id)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+            let request = UNNotificationRequest(identifier: alarm.id.uuidString, content: content, trigger: trigger)
+            
+            try? await center.add(request)
         } else {
-            // Cancel local notification
-            print("Canceling local notification for alarm: \(id)")
+            // Repeating notifications for each selected weekday
+            for weekday in alarm.weekdays {
+                var triggerComponents = DateComponents()
+                triggerComponents.weekday = weekday + 1 // UNCalendarNotificationTrigger uses 1-based weekdays
+                triggerComponents.hour = components.hour
+                triggerComponents.minute = components.minute
+                
+                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: true)
+                let request = UNNotificationRequest(
+                    identifier: "\(alarm.id.uuidString)-\(weekday)",
+                    content: content,
+                    trigger: trigger
+                )
+                
+                try? await center.add(request)
+            }
         }
+    }
+    
+    private func cancelNotification(for alarmId: UUID) async {
+        let center = UNUserNotificationCenter.current()
+        
+        // Cancel one-time notification
+        center.removePendingNotificationRequests(withIdentifiers: [alarmId.uuidString])
+        
+        // Cancel all repeating notifications for this alarm
+        let identifiers = (0..<7).map { "\(alarmId.uuidString)-\($0)" }
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
     }
     
     private func saveAlarms() {
@@ -450,34 +413,5 @@ struct AlarmConfiguration: Identifiable, Codable {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter.string(from: time)
-    }
-}
-
-// AlarmKit Metadata for our app
-struct MorningAssistantMetadata: AlarmMetadata {
-    let createdAt = Date()
-    let alarmId: String
-}
-
-// App Intent for stopping alarms
-struct StopAlarmIntent: LiveActivityIntent {
-    let alarmID: String
-    
-    init(alarmID: String) {
-        self.alarmID = alarmID
-    }
-    
-    func perform() async throws -> some IntentResult {
-        // Handle alarm stop action
-        print("Stopping alarm: \(alarmID)")
-        
-        // Trigger app to start if needed
-        NotificationCenter.default.post(
-            name: NSNotification.Name("AlarmTriggered"),
-            object: nil,
-            userInfo: ["alarmId": alarmID, "autoStart": true]
-        )
-        
-        return .result()
     }
 }
