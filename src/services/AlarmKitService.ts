@@ -67,18 +67,28 @@ export class AlarmKitService {
         return false;
       }
 
-      // 認証確認
-      const authResult = await AlarmKitPlugin.requestAuthorization();
-      this.isAuthorized = authResult.authorized;
-      
-      if (!this.isAuthorized) {
-        platformLog('AlarmKit authorization denied');
-        return false;
-      }
+      // プラグインの利用可能性チェック
+      try {
+        const authResult = await AlarmKitPlugin.requestAuthorization();
+        this.isAuthorized = authResult.authorized;
+        
+        if (!this.isAuthorized) {
+          platformLog('AlarmKit authorization denied');
+          return false;
+        }
 
-      this.isAvailable = true;
-      platformLog('AlarmKit service initialized successfully');
-      return true;
+        this.isAvailable = true;
+        platformLog('AlarmKit service initialized successfully');
+        return true;
+      } catch (pluginError: any) {
+        // UNIMPLEMENTEDエラーまたはプラグインが見つからない場合
+        if (pluginError?.code === 'UNIMPLEMENTED' || pluginError?.message?.includes('not implemented')) {
+          platformLog('AlarmKit plugin not available, falling back to NotificationService');
+          return false;
+        } else {
+          throw pluginError;
+        }
+      }
 
     } catch (error) {
       platformLog('Failed to initialize AlarmKit service:', error);

@@ -108,14 +108,18 @@ public class AlarmKitPlugin: CAPPlugin {
     
     @objc func getAlarms(_ call: CAPPluginCall) {
         Task {
-            let alarms = await alarmManager.alarms
-            let alarmData = alarms.map { alarm in
-                [
-                    "id": alarm.id.uuidString,
-                    "countdownDuration": alarm.countdownDuration
-                ]
+            do {
+                let alarms = try await alarmManager.alarms
+                let alarmData = alarms.map { alarm in
+                    [
+                        "id": alarm.id.uuidString,
+                        "countdownDuration": alarm.countdownDuration
+                    ]
+                }
+                call.resolve(["alarms": alarmData])
+            } catch {
+                call.reject("Failed to get alarms", error.localizedDescription)
             }
-            call.resolve(["alarms": alarmData])
         }
     }
     
@@ -150,12 +154,13 @@ public class AlarmKitPlugin: CAPPlugin {
         
         // 属性
         let attributes = AlarmAttributes(
+            presentation: .banner,
             tintColor: .blue,
             metadata: metadata
         )
         
         // タイマー設定（5分のカウントダウン例）
-        let configuration = AlarmManager.AlarmConfiguration.timer(
+        let configuration = AlarmManager.AlarmConfiguration<SimpleAlarmMetadata>.timer(
             duration: 300, // 5分
             attributes: attributes,
             stopIntent: nil,
