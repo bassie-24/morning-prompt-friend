@@ -8,6 +8,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        // AlarmKitPlugin手動登録（遅延実行）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first,
+               let bridge = window.rootViewController as? CAPBridgeViewController {
+                bridge.bridge?.registerPluginInstance(AlarmKitPlugin())
+                print("✅ AlarmKitPlugin registered manually")
+            }
+        }
+        
         return true
     }
     

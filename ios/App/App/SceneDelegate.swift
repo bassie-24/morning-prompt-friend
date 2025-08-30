@@ -10,7 +10,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         // AlarmKitPluginを手動登録
         if let bridge = self.window?.rootViewController as? CAPBridgeViewController {
-            bridge.registerPlugin(AlarmKitPlugin.self)
+            bridge.bridge?.registerPluginInstance(AlarmKitPlugin())
             print("✅ AlarmKitPlugin registered manually")
         }
     }
