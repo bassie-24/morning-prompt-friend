@@ -152,11 +152,27 @@ public class AlarmKitPlugin: CAPPlugin {
         // メタデータ
         let metadata = SimpleAlarmMetadata(title: title, subtitle: body)
         
+        // プレゼンテーション設定
+        let alert = AlarmPresentation.Alert(
+            title: LocalizedStringResource(stringLiteral: title),
+            stopButton: AlarmButton(text: "停止", textColor: .blue, systemImageName: "stop.circle"),
+            secondaryButton: AlarmButton(text: "繰り返し", textColor: .blue, systemImageName: "repeat"),
+            secondaryButtonBehavior: .countdown
+        )
+        
+        let countdown = AlarmPresentation.Countdown(title: LocalizedStringResource(stringLiteral: "カウントダウン中"))
+        let paused = AlarmPresentation.Paused(
+            title: LocalizedStringResource(stringLiteral: "一時停止中"),
+            resumeButton: AlarmButton(text: "再開", textColor: .blue, systemImageName: "play.circle")
+        )
+        
+        let presentation = AlarmPresentation(alert: alert, countdown: countdown, paused: paused)
+        
         // 属性
         let attributes = AlarmAttributes(
-            presentation: .banner,
-            tintColor: .blue,
-            metadata: metadata
+            presentation: presentation,
+            metadata: metadata,
+            tintColor: .blue
         )
         
         // タイマー設定（5分のカウントダウン例）
