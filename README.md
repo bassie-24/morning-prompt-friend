@@ -52,17 +52,16 @@ npm run dev
 
 ## What technologies are used for this project?
 
-This repository currently contains two codebases during migration:
+This repository now contains a pure Swift iOS app:
 
-- PWA (legacy): Vite + TypeScript + React + shadcn-ui + Tailwind CSS
-- Native iOS (new): Swift 5.9+, SwiftUI, MVVM, Combine
-
-Native app sources live at `NativeApp/MorningAssistant/`.
+- Native iOS: Swift 5.9+, SwiftUI, MVVM, Combine
+- Open the Xcode project at `MorningAssistant/MorningAssistant.xcodeproj`
 
 See also:
 - `docs/DESIGN-swift.md` — native architecture
 - `docs/MIGRATION.md` — mapping and plan
 - `docs/PROGRESS.md` — status updates
+- `docs/XcodeSetup.md` — build/run setup notes
 
 ## How can I deploy this project?
 

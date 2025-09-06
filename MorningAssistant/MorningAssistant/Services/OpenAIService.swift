@@ -5,6 +5,12 @@ class OpenAIService: ObservableObject {
     
     private let baseURL = "https://api.openai.com/v1/chat/completions"
     private var apiKey: String = ""
+    private lazy var session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 20
+        config.timeoutIntervalForResource = 30
+        return URLSession(configuration: config)
+    }()
     
     @Published var conversationHistory: [ConversationEntry] = []
     
@@ -45,30 +51,50 @@ class OpenAIService: ObservableObject {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
             
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
-                print("APIエラー: \(response)")
-                return nil
+            // 簡易リトライ（指数バックオフ）
+            let maxRetries = 2
+            var attempt = 0
+            var lastError: Error?
+            while attempt <= maxRetries {
+                do {
+                    let (data, response) = try await session.data(for: request)
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        throw URLError(.badServerResponse)
+                    }
+                    guard (200...299).contains(httpResponse.statusCode) else {
+                        // 429/5xx はリトライ対象
+                        if httpResponse.statusCode == 429 || (500...599).contains(httpResponse.statusCode) {
+                            throw URLError(.cannotConnectToHost)
+                        } else {
+                            print("API非成功ステータス: \(httpResponse.statusCode)")
+                            return nil
+                        }
+                    }
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let choices = json["choices"] as? [[String: Any]],
+                       let firstChoice = choices.first,
+                       let message = firstChoice["message"] as? [String: Any],
+                       let content = message["content"] as? String {
+                        let assistantEntry = ConversationEntry(
+                            role: .assistant,
+                            content: content,
+                            timestamp: Date()
+                        )
+                        conversationHistory.append(assistantEntry)
+                        return content
+                    } else {
+                        print("応答のパースに失敗")
+                        return nil
+                    }
+                } catch {
+                    lastError = error
+                    if attempt == maxRetries { break }
+                    let backoff = UInt64(pow(2.0, Double(attempt))) * 500_000_000 // 0.5s,1s,2s
+                    try? await Task.sleep(nanoseconds: backoff)
+                    attempt += 1
+                }
             }
-            
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let choices = json["choices"] as? [[String: Any]],
-               let firstChoice = choices.first,
-               let message = firstChoice["message"] as? [String: Any],
-               let content = message["content"] as? String {
-                
-                // AIの応答を会話履歴に追加
-                let assistantEntry = ConversationEntry(
-                    role: .assistant,
-                    content: content,
-                    timestamp: Date()
-                )
-                conversationHistory.append(assistantEntry)
-                
-                return content
-            }
+            if let lastError = lastError { print("OpenAI APIエラー(最終): \(lastError)") }
         } catch {
             print("OpenAI APIエラー: \(error)")
         }
@@ -117,7 +143,7 @@ class OpenAIService: ObservableObject {
         messages.append(["role": "user", "content": userMessage])
         
         return [
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4o-mini",
             "messages": messages,
             "temperature": 0.7,
             "max_tokens": 500
