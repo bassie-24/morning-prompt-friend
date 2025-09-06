@@ -7,12 +7,30 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		18C3C9072E6C144E00624E10 /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8FE2E6C144E00624E10 /* SpeechService.swift */; };
+		18C3C9082E6C144E00624E10 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C9042E6C144E00624E10 /* HomeView.swift */; };
+		18C3C9092E6C144E00624E10 /* AlarmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C9022E6C144E00624E10 /* AlarmView.swift */; };
+		18C3C90A2E6C144E00624E10 /* OpenAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8FD2E6C144E00624E10 /* OpenAIService.swift */; };
+		18C3C90B2E6C144E00624E10 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8F92E6C144E00624E10 /* Models.swift */; };
+		18C3C90C2E6C144E00624E10 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8FC2E6C144E00624E10 /* NotificationService.swift */; };
+		18C3C90D2E6C144E00624E10 /* CallLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C9032E6C144E00624E10 /* CallLogView.swift */; };
+		18C3C90E2E6C144E00624E10 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C9052E6C144E00624E10 /* SettingsView.swift */; };
+		18C3C90F2E6C144E00624E10 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8FB2E6C144E00624E10 /* DataManager.swift */; };
 		1A1A1A1A1A1A1A1A1A1A1A1A /* MorningAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A19 /* MorningAssistantApp.swift */; };
 		1A1A1A1A1A1A1A1A1A1A1A1C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1B /* ContentView.swift */; };
 		1A1A1A1A1A1A1A1A1A1A1A1E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1D /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		18C3C8F92E6C144E00624E10 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		18C3C8FB2E6C144E00624E10 /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
+		18C3C8FC2E6C144E00624E10 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		18C3C8FD2E6C144E00624E10 /* OpenAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIService.swift; sourceTree = "<group>"; };
+		18C3C8FE2E6C144E00624E10 /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
+		18C3C9022E6C144E00624E10 /* AlarmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmView.swift; sourceTree = "<group>"; };
+		18C3C9032E6C144E00624E10 /* CallLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallLogView.swift; sourceTree = "<group>"; };
+		18C3C9042E6C144E00624E10 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		18C3C9052E6C144E00624E10 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1A1A1A1A1A1A1A1A1A1A1A16 /* MorningAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MorningAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A1A1A1A1A1A1A1A1A1A1A19 /* MorningAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningAssistantApp.swift; sourceTree = "<group>"; };
 		1A1A1A1A1A1A1A1A1A1A1A1B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -31,9 +49,58 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		18C3C8FA2E6C144E00624E10 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				18C3C8F92E6C144E00624E10 /* Models.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		18C3C8FF2E6C144E00624E10 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				18C3C8FB2E6C144E00624E10 /* DataManager.swift */,
+				18C3C8FC2E6C144E00624E10 /* NotificationService.swift */,
+				18C3C8FD2E6C144E00624E10 /* OpenAIService.swift */,
+				18C3C8FE2E6C144E00624E10 /* SpeechService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		18C3C9002E6C144E00624E10 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		18C3C9012E6C144E00624E10 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		18C3C9062E6C144E00624E10 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				18C3C9022E6C144E00624E10 /* AlarmView.swift */,
+				18C3C9032E6C144E00624E10 /* CallLogView.swift */,
+				18C3C9042E6C144E00624E10 /* HomeView.swift */,
+				18C3C9052E6C144E00624E10 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		1A1A1A1A1A1A1A1A1A1A1A0D = {
 			isa = PBXGroup;
 			children = (
+				18C3C8FA2E6C144E00624E10 /* Models */,
+				18C3C8FF2E6C144E00624E10 /* Services */,
+				18C3C9002E6C144E00624E10 /* Utils */,
+				18C3C9012E6C144E00624E10 /* ViewModels */,
+				18C3C9062E6C144E00624E10 /* Views */,
 				1A1A1A1A1A1A1A1A1A1A1A18 /* MorningAssistant */,
 				1A1A1A1A1A1A1A1A1A1A1A17 /* Products */,
 			);
@@ -127,6 +194,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				18C3C9072E6C144E00624E10 /* SpeechService.swift in Sources */,
+				18C3C9082E6C144E00624E10 /* HomeView.swift in Sources */,
+				18C3C9092E6C144E00624E10 /* AlarmView.swift in Sources */,
+				18C3C90A2E6C144E00624E10 /* OpenAIService.swift in Sources */,
+				18C3C90B2E6C144E00624E10 /* Models.swift in Sources */,
+				18C3C90C2E6C144E00624E10 /* NotificationService.swift in Sources */,
+				18C3C90D2E6C144E00624E10 /* CallLogView.swift in Sources */,
+				18C3C90E2E6C144E00624E10 /* SettingsView.swift in Sources */,
+				18C3C90F2E6C144E00624E10 /* DataManager.swift in Sources */,
 				1A1A1A1A1A1A1A1A1A1A1A1C /* ContentView.swift in Sources */,
 				1A1A1A1A1A1A1A1A1A1A1A1A /* MorningAssistantApp.swift in Sources */,
 			);

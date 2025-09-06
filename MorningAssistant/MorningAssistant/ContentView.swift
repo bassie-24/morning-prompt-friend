@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var dataManager: DataManager
     @State private var selectedTab = 0
     
     var body: some View {
@@ -12,25 +13,33 @@ struct ContentView: View {
                 }
                 .tag(0)
             
-            SettingsView()
-                .tabItem {
-                    Label("設定", systemImage: "gear")
-                }
-                .tag(1)
-            
             AlarmView()
                 .tabItem {
                     Label("アラーム", systemImage: "alarm.fill")
                 }
-                .tag(2)
+                .tag(1)
             
-            if appState.planLimits.hasLogAccess {
-                CallLogView()
-                    .tabItem {
-                        Label("ログ", systemImage: "doc.text.fill")
-                    }
-                    .tag(3)
-            }
+            CallLogView()
+                .tabItem {
+                    Label("ログ", systemImage: "list.bullet")
+                }
+                .tag(2)
+                .disabled(!appState.planLimits.hasLogAccess)
+            
+            SettingsView()
+                .tabItem {
+                    Label("設定", systemImage: "gear")
+                }
+                .tag(3)
         }
+        .accentColor(.blue)
+    }
+}
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+            .environmentObject(AppState())
+            .environmentObject(DataManager.shared)
     }
 }
