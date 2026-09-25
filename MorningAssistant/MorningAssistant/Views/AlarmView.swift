@@ -1,5 +1,6 @@
 import SwiftUI
 import UserNotifications
+import AlarmKit
 
 struct AlarmView: View {
     @StateObject private var alarmManager = AlarmManager.shared
@@ -72,6 +73,48 @@ struct AlarmView: View {
                     }
                     .padding(.vertical, 4)
                 }
+                
+                // テスト用セクション（iOS 26以降）
+                if #available(iOS 26.0, *) {
+                    Section(header: Text("テスト（AlarmKit）")) {
+                        Button(action: {
+                            // 30秒後のテストアラームを設定
+                            let testAlarm = AlarmSettings(
+                                id: "test_\(Date().timeIntervalSince1970)",
+                                enabled: true,
+                                time: getTimeIn30Seconds(),
+                                days: [],
+                                label: "テストアラーム（30秒後）",
+                                sound: "default",
+                                snooze: true,
+                                snoozeDuration: 1
+                            )
+                            alarmManager.addAlarm(testAlarm)
+                        }) {
+                            Label("30秒後にアラームを設定", systemImage: "timer")
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Button(action: {
+                            // 10秒のタイマーを開始
+                            Task {
+                                if #available(iOS 26.0, *) {
+                                    do {
+                                        _ = try await AlarmKitService.shared.scheduleTimer(
+                                            duration: 10,
+                                            label: "10秒タイマー"
+                                        )
+                                    } catch {
+                                        print("タイマーエラー: \(error)")
+                                    }
+                                }
+                            }
+                        }) {
+                            Label("10秒タイマーを開始", systemImage: "stopwatch")
+                                .foregroundColor(.orange)
+                        }
+                    }
+                }
             }
             .navigationTitle("アラーム")
             .navigationBarItems(trailing: Button(action: { showAddAlarm = true }) {
@@ -96,6 +139,13 @@ struct AlarmView: View {
         for index in offsets {
             alarmManager.deleteAlarm(alarmManager.alarms[index])
         }
+    }
+    
+    private func getTimeIn30Seconds() -> String {
+        let date = Date().addingTimeInterval(30)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
     }
 }
 

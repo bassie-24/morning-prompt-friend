@@ -7,35 +7,47 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		18C3C9072E6C144E00624E10 /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8FE2E6C144E00624E10 /* SpeechService.swift */; };
-		18C3C9082E6C144E00624E10 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C9042E6C144E00624E10 /* HomeView.swift */; };
-		18C3C9092E6C144E00624E10 /* AlarmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C9022E6C144E00624E10 /* AlarmView.swift */; };
-		18C3C90A2E6C144E00624E10 /* OpenAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8FD2E6C144E00624E10 /* OpenAIService.swift */; };
-		18C3C90B2E6C144E00624E10 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8F92E6C144E00624E10 /* Models.swift */; };
-		18C3C90C2E6C144E00624E10 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8FC2E6C144E00624E10 /* NotificationService.swift */; };
-		18C3C90D2E6C144E00624E10 /* CallLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C9032E6C144E00624E10 /* CallLogView.swift */; };
-		18C3C90E2E6C144E00624E10 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C9052E6C144E00624E10 /* SettingsView.swift */; };
-		18C3C90F2E6C144E00624E10 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C3C8FB2E6C144E00624E10 /* DataManager.swift */; };
-		1A1A1A1A1A1A1A1A1A1A1A1A /* MorningAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A19 /* MorningAssistantApp.swift */; };
-		1A1A1A1A1A1A1A1A1A1A1A1C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1B /* ContentView.swift */; };
-		1A1A1A1A1A1A1A1A1A1A1A1E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1D /* Assets.xcassets */; };
+		15EE0333BDF0A24A0D19EA84 /* AlarmKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72414BD7019ACF54D72C9CC /* AlarmKitService.swift */; };
+		26A2EAE83543B0739DC52107 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A158FEF8BF6EE67249951B60 /* Models.swift */; };
+		64A45021617E4E2E9570F0E1 /* AlarmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0976DB47EB536094958A4D45 /* AlarmView.swift */; };
+		722CAB9BD56D5CA6AA72FEE3 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5527617843015EC4FF21B9 /* HomeView.swift */; };
+		76857A8855382D6ECC1106AC /* OpenAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF136B50FDE56C0A29D8773 /* OpenAIService.swift */; };
+		7E24AAFFB613380BF9B41E6E /* MorningAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72BF6EFDA6BA0501EEA130BD /* MorningAssistantApp.swift */; };
+		AE0D2FD1571982C446514055 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D779730F07430A71B2C0F28 /* NotificationService.swift */; };
+		B69D14AFE7E897EBF97F00C8 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2813EBBD67E9399EA45C5741 /* ContentView.swift */; };
+		B9DB484E70DB2AB28878EE98 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5443DE0BF22F82C096CD28A7 /* SettingsView.swift */; };
+		DDAD9D2502518D7ED9316D03 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A5FF3FE1D37C850342501C09 /* Assets.xcassets */; };
+		EBD8AD4BA340CA0D7C03292D /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00C3010D21E645F66B09F45 /* DataManager.swift */; };
+		F36C36E4C1B023CF26153804 /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68F14279F30F47034FAFF83F /* SpeechService.swift */; };
+		F7DFA49333FC1FFF4ABA686D /* CallLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8F22914AF5EF4E07FC339C2 /* CallLogView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		18C3C8F92E6C144E00624E10 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		18C3C8FB2E6C144E00624E10 /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
-		18C3C8FC2E6C144E00624E10 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
-		18C3C8FD2E6C144E00624E10 /* OpenAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIService.swift; sourceTree = "<group>"; };
-		18C3C8FE2E6C144E00624E10 /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
-		18C3C9022E6C144E00624E10 /* AlarmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmView.swift; sourceTree = "<group>"; };
-		18C3C9032E6C144E00624E10 /* CallLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallLogView.swift; sourceTree = "<group>"; };
-		18C3C9042E6C144E00624E10 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		18C3C9052E6C144E00624E10 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		0976DB47EB536094958A4D45 /* AlarmView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AlarmView.swift; sourceTree = "<group>"; };
 		1A1A1A1A1A1A1A1A1A1A1A16 /* MorningAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MorningAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		1A1A1A1A1A1A1A1A1A1A1A19 /* MorningAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningAssistantApp.swift; sourceTree = "<group>"; };
-		1A1A1A1A1A1A1A1A1A1A1A1B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		1A1A1A1A1A1A1A1A1A1A1A1D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		1A1A1A1A1A1A1A1A1A1A1A1F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1AF136B50FDE56C0A29D8773 /* OpenAIService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAIService.swift; sourceTree = "<group>"; };
+		2089759A5314FE152E1FFBF1 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		2813EBBD67E9399EA45C5741 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		29E7D482F453908267382CFA /* OpenAIService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Services/OpenAIService.swift; sourceTree = "<group>"; };
+		4D779730F07430A71B2C0F28 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		5443DE0BF22F82C096CD28A7 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		68F14279F30F47034FAFF83F /* SpeechService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
+		72BF6EFDA6BA0501EEA130BD /* MorningAssistantApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistantApp.swift; sourceTree = "<group>"; };
+		8D86B81BC8F1536540CBC65F /* AlarmKitService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Services/AlarmKitService.swift; sourceTree = "<group>"; };
+		A158FEF8BF6EE67249951B60 /* Models.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A5FF3FE1D37C850342501C09 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B6529017F58DB68276941278 /* AlarmView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Views/AlarmView.swift; sourceTree = "<group>"; };
+		D00C3010D21E645F66B09F45 /* DataManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
+		D2F1A38B92E3EFDFD5A0C8E8 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Services/NotificationService.swift; sourceTree = "<group>"; };
+		D55CEAC05C6D196C3D8A7F7F /* Models.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Models/Models.swift; sourceTree = "<group>"; };
+		D72414BD7019ACF54D72C9CC /* AlarmKitService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AlarmKitService.swift; sourceTree = "<group>"; };
+		DFB5AE2646F565E44F88C3CB /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Views/HomeView.swift; sourceTree = "<group>"; };
+		E07851B9A7A5B2FEF59AE035 /* SpeechService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Services/SpeechService.swift; sourceTree = "<group>"; };
+		E8F22914AF5EF4E07FC339C2 /* CallLogView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CallLogView.swift; sourceTree = "<group>"; };
+		E9925BA9D1249C86EB79FDAE /* DataManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Services/DataManager.swift; sourceTree = "<group>"; };
+		FAE8E34AA0D087A255A30371 /* CallLogView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Views/CallLogView.swift; sourceTree = "<group>"; };
+		FB5527617843015EC4FF21B9 /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		FFFE472DB2EAE7E8709878BA /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningAssistant/Views/SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,46 +61,37 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		18C3C8FA2E6C144E00624E10 /* Models */ = {
+		18C3C92A2E6C1E1E00624E10 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				18C3C8F92E6C144E00624E10 /* Models.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		18C3C8FF2E6C144E00624E10 /* Services */ = {
+		18C3C9302E6C1E1E00624E10 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				18C3C8FB2E6C144E00624E10 /* DataManager.swift */,
-				18C3C8FC2E6C144E00624E10 /* NotificationService.swift */,
-				18C3C8FD2E6C144E00624E10 /* OpenAIService.swift */,
-				18C3C8FE2E6C144E00624E10 /* SpeechService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
 		};
-		18C3C9002E6C144E00624E10 /* Utils */ = {
+		18C3C9312E6C1E1E00624E10 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
 			);
 			path = Utils;
 			sourceTree = "<group>";
 		};
-		18C3C9012E6C144E00624E10 /* ViewModels */ = {
+		18C3C9322E6C1E1E00624E10 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
-		18C3C9062E6C144E00624E10 /* Views */ = {
+		18C3C9372E6C1E1E00624E10 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				18C3C9022E6C144E00624E10 /* AlarmView.swift */,
-				18C3C9032E6C144E00624E10 /* CallLogView.swift */,
-				18C3C9042E6C144E00624E10 /* HomeView.swift */,
-				18C3C9052E6C144E00624E10 /* SettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -96,13 +99,13 @@
 		1A1A1A1A1A1A1A1A1A1A1A0D = {
 			isa = PBXGroup;
 			children = (
-				18C3C8FA2E6C144E00624E10 /* Models */,
-				18C3C8FF2E6C144E00624E10 /* Services */,
-				18C3C9002E6C144E00624E10 /* Utils */,
-				18C3C9012E6C144E00624E10 /* ViewModels */,
-				18C3C9062E6C144E00624E10 /* Views */,
-				1A1A1A1A1A1A1A1A1A1A1A18 /* MorningAssistant */,
+				18C3C92A2E6C1E1E00624E10 /* Models */,
+				18C3C9302E6C1E1E00624E10 /* Services */,
+				18C3C9312E6C1E1E00624E10 /* Utils */,
+				18C3C9322E6C1E1E00624E10 /* ViewModels */,
+				18C3C9372E6C1E1E00624E10 /* Views */,
 				1A1A1A1A1A1A1A1A1A1A1A17 /* Products */,
+				F6381F01B70F4DEC2500A122 /* MorningAssistant */,
 			);
 			sourceTree = "<group>";
 		};
@@ -114,14 +117,52 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		1A1A1A1A1A1A1A1A1A1A1A18 /* MorningAssistant */ = {
+		44939F08DE877623ACB4689A /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				1A1A1A1A1A1A1A1A1A1A1A19 /* MorningAssistantApp.swift */,
-				1A1A1A1A1A1A1A1A1A1A1A1B /* ContentView.swift */,
-				1A1A1A1A1A1A1A1A1A1A1A1D /* Assets.xcassets */,
-				1A1A1A1A1A1A1A1A1A1A1A1F /* Info.plist */,
+				D72414BD7019ACF54D72C9CC /* AlarmKitService.swift */,
+				4D779730F07430A71B2C0F28 /* NotificationService.swift */,
+				D00C3010D21E645F66B09F45 /* DataManager.swift */,
+				1AF136B50FDE56C0A29D8773 /* OpenAIService.swift */,
+				68F14279F30F47034FAFF83F /* SpeechService.swift */,
 			);
+			name = Services;
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A210E1541F59E06767FA5BC0 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A158FEF8BF6EE67249951B60 /* Models.swift */,
+			);
+			name = Models;
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AF1AD5A5FC392E2F72C72E4C /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FB5527617843015EC4FF21B9 /* HomeView.swift */,
+				0976DB47EB536094958A4D45 /* AlarmView.swift */,
+				E8F22914AF5EF4E07FC339C2 /* CallLogView.swift */,
+				5443DE0BF22F82C096CD28A7 /* SettingsView.swift */,
+			);
+			name = Views;
+			path = Views;
+			sourceTree = "<group>";
+		};
+		F6381F01B70F4DEC2500A122 /* MorningAssistant */ = {
+			isa = PBXGroup;
+			children = (
+				44939F08DE877623ACB4689A /* Services */,
+				A210E1541F59E06767FA5BC0 /* Models */,
+				AF1AD5A5FC392E2F72C72E4C /* Views */,
+				72BF6EFDA6BA0501EEA130BD /* MorningAssistantApp.swift */,
+				2813EBBD67E9399EA45C5741 /* ContentView.swift */,
+				A5FF3FE1D37C850342501C09 /* Assets.xcassets */,
+				2089759A5314FE152E1FFBF1 /* Info.plist */,
+			);
+			name = MorningAssistant;
 			path = MorningAssistant;
 			sourceTree = "<group>";
 		};
@@ -183,7 +224,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A1A1A1A1A1A1A1A1A1A1A1E /* Assets.xcassets in Resources */,
+				DDAD9D2502518D7ED9316D03 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -194,17 +235,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				18C3C9072E6C144E00624E10 /* SpeechService.swift in Sources */,
-				18C3C9082E6C144E00624E10 /* HomeView.swift in Sources */,
-				18C3C9092E6C144E00624E10 /* AlarmView.swift in Sources */,
-				18C3C90A2E6C144E00624E10 /* OpenAIService.swift in Sources */,
-				18C3C90B2E6C144E00624E10 /* Models.swift in Sources */,
-				18C3C90C2E6C144E00624E10 /* NotificationService.swift in Sources */,
-				18C3C90D2E6C144E00624E10 /* CallLogView.swift in Sources */,
-				18C3C90E2E6C144E00624E10 /* SettingsView.swift in Sources */,
-				18C3C90F2E6C144E00624E10 /* DataManager.swift in Sources */,
-				1A1A1A1A1A1A1A1A1A1A1A1C /* ContentView.swift in Sources */,
-				1A1A1A1A1A1A1A1A1A1A1A1A /* MorningAssistantApp.swift in Sources */,
+				7E24AAFFB613380BF9B41E6E /* MorningAssistantApp.swift in Sources */,
+				B69D14AFE7E897EBF97F00C8 /* ContentView.swift in Sources */,
+				15EE0333BDF0A24A0D19EA84 /* AlarmKitService.swift in Sources */,
+				AE0D2FD1571982C446514055 /* NotificationService.swift in Sources */,
+				EBD8AD4BA340CA0D7C03292D /* DataManager.swift in Sources */,
+				76857A8855382D6ECC1106AC /* OpenAIService.swift in Sources */,
+				F36C36E4C1B023CF26153804 /* SpeechService.swift in Sources */,
+				26A2EAE83543B0739DC52107 /* Models.swift in Sources */,
+				722CAB9BD56D5CA6AA72FEE3 /* HomeView.swift in Sources */,
+				64A45021617E4E2E9570F0E1 /* AlarmView.swift in Sources */,
+				F7DFA49333FC1FFF4ABA686D /* CallLogView.swift in Sources */,
+				B9DB484E70DB2AB28878EE98 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

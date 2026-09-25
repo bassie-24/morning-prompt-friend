@@ -51,5 +51,7 @@
 	</array>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>アラーム通知を送信して朝の準備をお知らせします</string>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>指定した時刻にアラームを鳴らして朝の準備をサポートします</string>
 </dict>
 </plist>
